@@ -1,0 +1,60 @@
+name: CD (ECS Fargate Deploy)
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push Web & API images
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -f apps/web/Dockerfile -t $REGISTRY/fss-web:${{ github.sha }} .
+          docker push $REGISTRY/fss-web:${{ github.sha }}
+          docker build -f apps/api/Dockerfile -t $REGISTRY/fss-api:${{ github.sha }} .
+          docker push $REGISTRY/fss-api:${{ github.sha }}
+
+  deploy-stg:
+    needs: build-and-push
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy to staging ECS
+        run: |
+          aws ecs update-service --cluster fss-stg --service api --force-new-deployment
+          aws ecs update-service --cluster fss-stg --service web --force-new-deployment
+
+  deploy-prod:
+    needs: deploy-stg
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy to production ECS
+        run: |
+          aws ecs update-service --cluster fss-prod --service api --force-new-deployment
+          aws ecs update-service --cluster fss-prod --service web --force-new-deployment
