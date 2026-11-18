@@ -22,7 +22,8 @@
     "error": "Không thể tải dịch vụ. Vui lòng thử lại sau.",
     "prev": "Trước",
     "next": "Tiếp",
-    "details": "Xem chi tiết"
+    "details": "Xem chi tiết",
+    "pagination": "Trang kết quả tìm kiếm"
   },
   "categories": {
     "medical": "Y tế",
@@ -63,6 +64,7 @@
     "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau."
   },
   "footer": {
+    "nav": "Thông tin trang web",
     "contact": "Liên hệ",
     "apply": "Đăng ký đăng tải"
   },

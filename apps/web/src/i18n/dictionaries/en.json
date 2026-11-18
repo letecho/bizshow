@@ -22,7 +22,8 @@
     "error": "Could not load services. Please try again later.",
     "prev": "Previous",
     "next": "Next",
-    "details": "View details"
+    "details": "View details",
+    "pagination": "Search result pages"
   },
   "categories": {
     "medical": "Medical",
@@ -63,6 +64,7 @@
     "error": "Could not send your message. Please try again later."
   },
   "footer": {
+    "nav": "Site information",
     "contact": "Contact us",
     "apply": "Apply for a listing"
   },
