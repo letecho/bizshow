@@ -11,6 +11,8 @@ const memoryCache = new LRUCache<string, string>({
   max: 500,
   ttl: 1000 * 60 * 5,
 });
+// 固定ウィンドウのカウンタ（レート制限等）。キャッシュ本体とは別枠にして追い出しを防ぐ
+const memoryCounters = new LRUCache<string, { count: number; resetAt: number }>({ max: 10_000 });
 
 export const appCache = {
   isDistributed(): boolean {
@@ -32,11 +34,31 @@ export const appCache = {
     memoryCache.set(key, value, { ttl: ttlSec * 1000 });
   },
 
+  /**
+   * key のカウンタを 1 増やす。初回で windowMs の有効期限を設定する（固定ウィンドウ）。
+   * 戻り値の resetAt はカウンタが消える時刻（epoch ms）
+   */
+  async incr(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
+    if (redis) {
+      const results = await redis.multi().incr(key).pexpire(key, windowMs, 'NX').pttl(key).exec();
+      const count = Number(results?.[0]?.[1] ?? 1);
+      const ttl = Number(results?.[2]?.[1] ?? -1);
+      return { count, resetAt: Date.now() + (ttl > 0 ? ttl : windowMs) };
+    }
+    const now = Date.now();
+    const current = memoryCounters.get(key);
+    const entry = current && current.resetAt > now ? current : { count: 0, resetAt: now + windowMs };
+    entry.count += 1;
+    memoryCounters.set(key, entry, { ttl: entry.resetAt - now });
+    return { ...entry };
+  },
+
   async del(key: string): Promise<void> {
     if (redis) {
       await redis.del(key);
       return;
     }
     memoryCache.delete(key);
+    memoryCounters.delete(key);
   },
 };
