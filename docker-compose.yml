@@ -22,5 +22,44 @@ services:
     ports:
       - "6379:6379"
 
+  # アプリ一括起動: docker compose --profile app up --build → http://localhost:3000
+  api:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      # builder ステージ（ワークスペース全体 + prisma generate 済み）を使い tsx で起動する
+      # ※ 本番 runner ステージは packages/shared を TS のまま参照するため現状起動できない（PR 本文参照）
+      target: builder
+    environment:
+      DATABASE_URL: postgresql://app:localpassword@postgres:5432/foreign_service_dev?schema=public
+      PORT: "4000"
+      WEB_ORIGIN: http://localhost:3000
+    command: >-
+      sh -c "pnpm --filter api exec prisma migrate deploy &&
+             pnpm --filter api db:seed &&
+             pnpm --filter api exec tsx src/main.ts"
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # SSR はコンテナ間通信で API を呼ぶ（ビルド時に埋め込まれる）
+        NEXT_PUBLIC_API_URL: http://api:4000
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
 volumes:
   pgdata:
