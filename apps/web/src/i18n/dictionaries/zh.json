@@ -33,5 +33,15 @@
     "education": "教育",
     "work": "工作",
     "daily": "生活"
+  },
+  "detail": {
+    "category": "类别",
+    "area": "地区",
+    "address": "地址",
+    "phone": "电话",
+    "website": "网站",
+    "languages": "支持语言",
+    "back": "返回搜索",
+    "error": "无法加载该服务。请稍后再试。"
   }
 }

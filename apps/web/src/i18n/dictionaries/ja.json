@@ -33,5 +33,15 @@
     "education": "教育",
     "work": "仕事",
     "daily": "生活"
+  },
+  "detail": {
+    "category": "カテゴリ",
+    "area": "地域",
+    "address": "住所",
+    "phone": "電話",
+    "website": "Webサイト",
+    "languages": "対応言語",
+    "back": "検索に戻る",
+    "error": "サービスを読み込めませんでした。時間をおいて再度お試しください。"
   }
 }

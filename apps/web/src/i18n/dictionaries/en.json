@@ -33,5 +33,15 @@
     "education": "Education",
     "work": "Work",
     "daily": "Daily Life"
+  },
+  "detail": {
+    "category": "Category",
+    "area": "Area",
+    "address": "Address",
+    "phone": "Phone",
+    "website": "Website",
+    "languages": "Supported languages",
+    "back": "Back to search",
+    "error": "Could not load this service. Please try again later."
   }
 }

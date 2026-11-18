@@ -33,5 +33,15 @@
     "education": "Giáo dục",
     "work": "Việc làm",
     "daily": "Đời sống"
+  },
+  "detail": {
+    "category": "Danh mục",
+    "area": "Khu vực",
+    "address": "Địa chỉ",
+    "phone": "Điện thoại",
+    "website": "Trang web",
+    "languages": "Ngôn ngữ hỗ trợ",
+    "back": "Quay lại tìm kiếm",
+    "error": "Không thể tải dịch vụ này. Vui lòng thử lại sau."
   }
 }
