@@ -58,7 +58,7 @@ export default async function HomePage({
               page={result.value.meta.page}
               limit={result.value.meta.limit}
               total={result.value.meta.total}
-              labels={{ prev: dict.search.prev, next: dict.search.next }}
+              labels={{ prev: dict.search.prev, next: dict.search.next, nav: dict.search.pagination }}
             />
           </>
         )}

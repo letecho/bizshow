@@ -22,7 +22,8 @@
     "error": "无法加载服务。请稍后再试。",
     "prev": "上一页",
     "next": "下一页",
-    "details": "查看详情"
+    "details": "查看详情",
+    "pagination": "搜索结果分页"
   },
   "categories": {
     "medical": "医疗",
@@ -63,6 +64,7 @@
     "error": "发送失败，请稍后再试。"
   },
   "footer": {
+    "nav": "网站信息",
     "contact": "联系我们",
     "apply": "申请刊登"
   },

@@ -39,7 +39,7 @@ export default async function LocaleLayout({ children, params }: Props & { child
         </header>
         {children}
         <footer className={styles.footer}>
-          <nav aria-label="legal" className={styles.footerNav}>
+          <nav aria-label={dict.footer.nav} className={styles.footerNav}>
             {LEGAL_PAGES.map((page) => (
               <a key={page} href={`/${locale}/legal/${page}`}>
                 {dict.legal[page]}

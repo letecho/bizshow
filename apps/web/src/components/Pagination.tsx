@@ -14,7 +14,7 @@ export function Pagination({
   page: number;
   limit: number;
   total: number;
-  labels: { prev: string; next: string };
+  labels: { prev: string; next: string; nav: string };
 }) {
   const hrefFor = (p: number) => {
     const params = new URLSearchParams(query);
@@ -26,7 +26,7 @@ export function Pagination({
   if (!hasPrev && !hasNext) return null;
 
   return (
-    <nav className={styles.nav}>
+    <nav aria-label={labels.nav} className={styles.nav}>
       {hasPrev ? (
         <a href={hrefFor(page - 1)} rel="prev">
           ← {labels.prev}
