@@ -60,6 +60,7 @@
     "sending": "Đang gửi…",
     "sent": "Cảm ơn bạn. Tin nhắn đã được gửi.",
     "invalid": "Vui lòng kiểm tra họ tên, email và nội dung (tối đa 2.000 ký tự).",
+    "invalidFields": "Vui lòng kiểm tra các mục sau:",
     "rateLimited": "Bạn đã gửi quá nhiều lần. Vui lòng thử lại sau.",
     "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau."
   },
@@ -81,6 +82,7 @@
     "sending": "Đang gửi…",
     "sent": "Cảm ơn bạn. Chúng tôi đã nhận được đơn đăng ký và sẽ liên hệ sau khi xem xét.",
     "invalid": "Vui lòng kiểm tra các mục bắt buộc (danh mục, tỉnh/thành, ngôn ngữ, tên và mô tả bằng tiếng Anh, người phụ trách và email).",
+    "invalidFields": "Vui lòng kiểm tra các mục sau:",
     "error": "Không thể gửi đơn đăng ký. Vui lòng thử lại sau."
   },
   "notFound": {
