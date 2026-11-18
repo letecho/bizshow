@@ -49,7 +49,11 @@ export default async function ServiceDetailPage({ params }: Props) {
         <article className={styles.card}>
           {result.value.data.imageUrl && (
             // 画像は CDN 配信のため next/image の最適化（remotePatterns 設定）は使わない
-            <img src={result.value.data.imageUrl} alt="" className={styles.image} />
+            <img
+              src={result.value.data.imageUrl}
+              alt={pickText(result.value.data.name, locale)}
+              className={styles.image}
+            />
           )}
           <h1 className={styles.name}>{pickText(result.value.data.name, locale)}</h1>
           <p className={styles.description}>{pickText(result.value.data.description, locale)}</p>
