@@ -1,0 +1,42 @@
+import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } from '@fss/shared';
+import { createApp } from '../../app';
+import {
+  createInMemoryServiceRepository,
+  type InMemoryServiceRecord,
+} from '../../repositories/inMemoryServiceRepository';
+
+let seq = 0;
+
+export function makeRecord(
+  overrides: Partial<InMemoryServiceRecord> & {
+    category?: ServiceCategory;
+    prefecture?: PrefectureCode;
+    supportedLanguages?: SupportedLocale[];
+    name?: LocalizedText;
+  } = {},
+): InMemoryServiceRecord {
+  seq += 1;
+  const name = overrides.name ?? { en: `Service ${seq}`, ja: `サービス${seq}` };
+  const description = overrides.description ?? { en: `Description ${seq}` };
+  return {
+    id: `id-${seq}`,
+    slug: `service-${seq}`,
+    category: 'medical',
+    prefecture: 'tokyo',
+    city: null,
+    supportedLanguages: ['ja', 'en'],
+    address: null,
+    phone: null,
+    websiteUrl: null,
+    updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
+    isPublished: true,
+    ...overrides,
+    name,
+    description,
+    searchText: [...Object.values(name), ...Object.values(description)].join(' ').toLowerCase(),
+  };
+}
+
+export function testApp(records: InMemoryServiceRecord[] = []) {
+  return createApp({ serviceRepository: createInMemoryServiceRepository(records) });
+}
