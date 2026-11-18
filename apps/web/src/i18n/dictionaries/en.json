@@ -60,6 +60,7 @@
     "sending": "Sending…",
     "sent": "Thank you. Your message has been sent.",
     "invalid": "Please check your name, email and message (up to 2,000 characters).",
+    "invalidFields": "Please check the following fields:",
     "rateLimited": "Too many messages. Please wait a while and try again.",
     "error": "Could not send your message. Please try again later."
   },
@@ -81,6 +82,7 @@
     "sending": "Submitting…",
     "sent": "Thank you. We have received your application and will contact you after review.",
     "invalid": "Please check the required fields (category, prefecture, languages, English name and description, contact person and email).",
+    "invalidFields": "Please check the following fields:",
     "error": "Could not submit your application. Please try again later."
   },
   "notFound": {
