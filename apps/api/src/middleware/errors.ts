@@ -6,6 +6,7 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
+  | 'CONFLICT'
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR';
 

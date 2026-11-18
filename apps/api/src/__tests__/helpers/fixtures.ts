@@ -32,6 +32,7 @@ export function makeRecord(
     phone: null,
     websiteUrl: null,
     updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
+    createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
     isPublished: true,
     ...overrides,
     name,

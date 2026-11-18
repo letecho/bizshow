@@ -3,7 +3,10 @@ import {
   PREFECTURES,
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
+  AdminServiceInputSchema,
+  AdminServiceListQuerySchema,
   InquiryInputSchema,
+  SlugSchema,
   ListingRequestInputSchema,
   ServiceSearchQuerySchema,
   isSupportedLocale,
@@ -111,5 +114,31 @@ describe('ListingRequestInputSchema', () => {
     expect(ListingRequestInputSchema.safeParse({ ...valid, websiteUrl: 'https://example.com' }).success).toBe(true);
     expect(ListingRequestInputSchema.safeParse({ ...valid, phone: '03-1234-5678' }).success).toBe(true);
     expect(ListingRequestInputSchema.safeParse({ ...valid, phone: 'call me' }).success).toBe(false);
+  });
+});
+
+describe('admin schemas', () => {
+  it('validates slugs', () => {
+    expect(SlugSchema.safeParse('tokyo-clinic-1').success).toBe(true);
+    expect(SlugSchema.safeParse('Tokyo Clinic').success).toBe(false);
+    expect(SlugSchema.safeParse('-bad-').success).toBe(false);
+  });
+
+  it('parses the published filter from query strings', () => {
+    expect(AdminServiceListQuerySchema.parse({ published: 'false' }).published).toBe(false);
+    expect(AdminServiceListQuerySchema.parse({ published: '' }).published).toBeUndefined();
+    expect(AdminServiceListQuerySchema.safeParse({ published: 'yes' }).success).toBe(false);
+  });
+
+  it('defaults isPublished to false for new services', () => {
+    const parsed = AdminServiceInputSchema.parse({
+      slug: 'a',
+      category: 'daily',
+      prefecture: 'tokyo',
+      supportedLanguages: ['en'],
+      name: { en: 'A' },
+      description: { en: 'B' },
+    });
+    expect(parsed.isPublished).toBe(false);
   });
 });

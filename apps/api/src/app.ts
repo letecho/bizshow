@@ -8,14 +8,14 @@ import { errorHandler, notFoundHandler } from './middleware/errors';
 import type { Mailer } from './mail/mailer';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
-import type { ServiceRepository } from './repositories/serviceRepository';
+import type { ServiceAdminRepository, ServiceRepository } from './repositories/serviceRepository';
 import { adminRouter } from './routes/admin';
 import { inquiriesRouter } from './routes/inquiries';
 import { listingRequestsRouter } from './routes/listingRequests';
 import { servicesRouter } from './routes/services';
 
 export interface AppOptions {
-  serviceRepository: ServiceRepository;
+  serviceRepository: ServiceRepository & ServiceAdminRepository;
   inquiryRepository: InquiryRepository;
   listingRequestRepository: ListingRequestRepository;
   mailer: Mailer;
@@ -57,7 +57,14 @@ export function createApp(options: AppOptions) {
 
   app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository));
 
-  app.use('/api/v1/admin', adminRouter(requireAdmin(options.auth)));
+  app.use(
+    '/api/v1/admin',
+    adminRouter({
+      requireAdmin: requireAdmin(options.auth),
+      services: options.serviceRepository,
+      listingRequests: options.listingRequestRepository,
+    }),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);

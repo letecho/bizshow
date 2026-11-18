@@ -192,3 +192,60 @@ export const ListingRequestInputSchema = ListingFieldsSchema.extend({
   contactEmail: z.string().trim().max(254).pipe(z.email()),
 });
 export type ListingRequestInput = z.infer<typeof ListingRequestInputSchema>;
+
+// ---- Admin (F-106) -----------------------------------------------------------
+
+/** URL 用 slug: 英小文字・数字をハイフンで区切る */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const SlugSchema = z.string().trim().min(1).max(100).regex(SLUG_PATTERN);
+
+/** 管理画面での掲載作成・更新（PUT は全項目置き換え） */
+export const AdminServiceInputSchema = ListingFieldsSchema.extend({
+  slug: SlugSchema,
+  isPublished: z.boolean().default(false),
+});
+export type AdminServiceInput = z.infer<typeof AdminServiceInputSchema>;
+
+const booleanQuery = z.preprocess(emptyToUndefined, z.enum(['true', 'false']).transform((v) => v === 'true').optional());
+const pageQuery = z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).default(1));
+const limitQuery = z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(100).default(50));
+
+export const AdminServiceListQuerySchema = z.object({
+  q: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
+  /** true = 公開のみ / false = 非公開のみ / 未指定 = すべて */
+  published: booleanQuery,
+  page: pageQuery,
+  limit: limitQuery,
+});
+export type AdminServiceListQuery = z.infer<typeof AdminServiceListQuerySchema>;
+
+export const ListingRequestListQuerySchema = z.object({
+  status: z.preprocess(emptyToUndefined, z.enum(LISTING_REQUEST_STATUSES).optional()),
+  page: pageQuery,
+  limit: limitQuery,
+});
+export type ListingRequestListQuery = z.infer<typeof ListingRequestListQuerySchema>;
+
+export const PublishInputSchema = z.object({ isPublished: z.boolean() });
+
+/** 申請承認時に管理者が決める項目 */
+export const ApproveListingRequestSchema = z.object({
+  slug: SlugSchema,
+  isPublished: z.boolean().default(false),
+});
+
+/** 管理画面用の掲載（非公開も含む） */
+export interface AdminService extends ServiceDetail {
+  isPublished: boolean;
+  /** ISO 8601 */
+  createdAt: string;
+}
+
+/** 管理画面用の掲載申請 */
+export interface ListingRequest extends ListingRequestInput {
+  id: string;
+  status: ListingRequestStatus;
+  /** ISO 8601 */
+  createdAt: string;
+  updatedAt: string;
+}

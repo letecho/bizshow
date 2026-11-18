@@ -86,7 +86,7 @@ describe('GET /api/v1/services/:slug', () => {
   it('returns the service detail for an existing slug', async () => {
     const res = await request(app).get('/api/v1/services/medical-tokyo');
     expect(res.status).toBe(200);
-    const { isPublished: _p, searchText: _s, ...expected } = records[2];
+    const { isPublished: _p, searchText: _s, createdAt: _c, ...expected } = records[2];
     expect(res.body).toEqual({ data: expected });
   });
 

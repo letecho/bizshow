@@ -1,14 +1,43 @@
-import type { ServiceDetail } from '@fss/shared';
-import type { ServiceRepository } from './serviceRepository';
+import type { AdminService, AdminServiceInput } from '@fss/shared';
+import { buildSearchText } from '../db/searchText';
+import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
 
-export interface InMemoryServiceRecord extends ServiceDetail {
-  isPublished: boolean;
+export interface InMemoryServiceRecord extends AdminService {
   /** 全言語の name + description を小文字連結したもの */
   searchText: string;
 }
 
+function toAdminService({ searchText: _searchText, ...service }: InMemoryServiceRecord): AdminService {
+  return service;
+}
+
+function fromInput(input: AdminServiceInput) {
+  return {
+    ...input,
+    city: input.city ?? null,
+    address: input.address ?? null,
+    phone: input.phone ?? null,
+    websiteUrl: input.websiteUrl ?? null,
+    searchText: buildSearchText(input.name, input.description),
+  };
+}
+
 /** テスト・ローカル用。Prisma 実装と同じ絞り込み・並び順を再現する */
-export function createInMemoryServiceRepository(records: InMemoryServiceRecord[]): ServiceRepository {
+export function createInMemoryServiceRepository(
+  records: InMemoryServiceRecord[],
+): ServiceRepository & ServiceAdminRepository {
+  let seq = 0;
+  const byUpdatedDesc = (a: InMemoryServiceRecord, b: InMemoryServiceRecord) => b.updatedAt.localeCompare(a.updatedAt);
+  const assertSlugFree = (slug: string, exceptId?: string) => {
+    if (records.some((r) => r.slug === slug && r.id !== exceptId)) throw new SlugConflictError(slug);
+  };
+  const modify = (id: string, change: Partial<InMemoryServiceRecord>) => {
+    const record = records.find((r) => r.id === id);
+    if (!record) return null;
+    Object.assign(record, change, { updatedAt: new Date().toISOString() });
+    return toAdminService(record);
+  };
+
   return {
     async search({ q, category, prefecture, lang, page, limit }) {
       const needle = q?.toLowerCase();
@@ -18,7 +47,7 @@ export function createInMemoryServiceRepository(records: InMemoryServiceRecord[]
         .filter((r) => !prefecture || r.prefecture === prefecture)
         .filter((r) => !lang || r.supportedLanguages.includes(lang))
         .filter((r) => !needle || r.searchText.toLowerCase().includes(needle))
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        .sort(byUpdatedDesc);
       const items = matched
         .slice((page - 1) * limit, page * limit)
         .map(({ id, slug, category, prefecture, city, supportedLanguages, name }) => ({
@@ -36,8 +65,47 @@ export function createInMemoryServiceRepository(records: InMemoryServiceRecord[]
     async findBySlug(slug) {
       const record = records.find((r) => r.slug === slug && r.isPublished);
       if (!record) return null;
-      const { isPublished: _isPublished, searchText: _searchText, ...detail } = record;
+      const { isPublished: _isPublished, createdAt: _createdAt, ...detail } = toAdminService(record);
       return detail;
+    },
+
+    async adminList({ q, published, page, limit }) {
+      const needle = q?.toLowerCase();
+      const matched = records
+        .filter((r) => published === undefined || r.isPublished === published)
+        .filter((r) => !needle || r.searchText.includes(needle) || r.slug.includes(needle))
+        .sort(byUpdatedDesc);
+      return { items: matched.slice((page - 1) * limit, page * limit).map(toAdminService), total: matched.length };
+    },
+
+    async adminFindById(id) {
+      const record = records.find((r) => r.id === id);
+      return record ? toAdminService(record) : null;
+    },
+
+    async create(input) {
+      assertSlugFree(input.slug);
+      seq += 1;
+      const now = new Date().toISOString();
+      const record: InMemoryServiceRecord = { ...fromInput(input), id: `new-${seq}`, createdAt: now, updatedAt: now };
+      records.push(record);
+      return toAdminService(record);
+    },
+
+    async update(id, input) {
+      assertSlugFree(input.slug, id);
+      return modify(id, fromInput(input));
+    },
+
+    async setPublished(id, isPublished) {
+      return modify(id, { isPublished });
+    },
+
+    async delete(id) {
+      const index = records.findIndex((r) => r.id === id);
+      if (index < 0) return null;
+      const [removed] = records.splice(index, 1);
+      return toAdminService(removed);
     },
   };
 }
