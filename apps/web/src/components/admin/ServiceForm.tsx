@@ -1,7 +1,14 @@
 'use client';
 
 import { startTransition, useActionState, useState, type FormEvent } from 'react';
-import { PREFECTURES, SERVICE_CATEGORIES, type AdminService, type SupportedLocale } from '@fss/shared/domain';
+import {
+  LISTING_TEXT_MAX,
+  PREFECTURES,
+  SERVICE_CATEGORIES,
+  SLUG_MAX,
+  type AdminService,
+  type SupportedLocale,
+} from '@fss/shared/domain';
 import type { FormState } from '../../app/admin/actions';
 import { localeNames, locales } from '../../i18n/config';
 import en from '../../i18n/dictionaries/en.json';
@@ -31,7 +38,7 @@ export function ServiceForm({
       <div className={styles.grid}>
         <label className={formStyles.field}>
           <span>slug *</span>
-          <input name="slug" required defaultValue={service?.slug} placeholder="tokyo-visa-office" />
+          <input name="slug" required maxLength={SLUG_MAX} defaultValue={service?.slug} placeholder="tokyo-visa-office" />
         </label>
         <label className={formStyles.field}>
           <span>カテゴリ *</span>
@@ -61,15 +68,21 @@ export function ServiceForm({
         </label>
         <label className={formStyles.field}>
           <span>市区町村</span>
-          <input name="city" maxLength={100} defaultValue={service?.city ?? ''} />
+          <input name="city" maxLength={LISTING_TEXT_MAX.city} defaultValue={service?.city ?? ''} />
         </label>
         <label className={formStyles.field}>
           <span>電話</span>
-          <input name="phone" type="tel" defaultValue={service?.phone ?? ''} />
+          <input name="phone" type="tel" maxLength={LISTING_TEXT_MAX.phone} defaultValue={service?.phone ?? ''} />
         </label>
         <label className={formStyles.field}>
           <span>Web サイト</span>
-          <input name="websiteUrl" type="url" defaultValue={service?.websiteUrl ?? ''} placeholder="https://" />
+          <input
+            name="websiteUrl"
+            type="url"
+            maxLength={LISTING_TEXT_MAX.websiteUrl}
+            defaultValue={service?.websiteUrl ?? ''}
+            placeholder="https://"
+          />
         </label>
       </div>
 
@@ -109,15 +122,24 @@ export function ServiceForm({
         <div key={l} role="tabpanel" hidden={tab !== l} className={formStyles.form}>
           <label className={formStyles.field}>
             <span>サービス名（{l}）{l === 'en' ? ' *' : ''}</span>
-            <input name={`name_${l}`} defaultValue={service?.name[l] ?? ''} />
+            <input name={`name_${l}`} maxLength={LISTING_TEXT_MAX.name} defaultValue={service?.name[l] ?? ''} />
           </label>
           <label className={formStyles.field}>
             <span>説明（{l}）{l === 'en' ? ' *' : ''}</span>
-            <textarea name={`description_${l}`} rows={6} defaultValue={service?.description[l] ?? ''} />
+            <textarea
+              name={`description_${l}`}
+              rows={6}
+              maxLength={LISTING_TEXT_MAX.description}
+              defaultValue={service?.description[l] ?? ''}
+            />
           </label>
           <label className={formStyles.field}>
             <span>住所（{l}）</span>
-            <input name={`address_${l}`} defaultValue={service?.address?.[l] ?? ''} />
+            <input
+              name={`address_${l}`}
+              maxLength={LISTING_TEXT_MAX.address}
+              defaultValue={service?.address?.[l] ?? ''}
+            />
           </label>
         </div>
       ))}

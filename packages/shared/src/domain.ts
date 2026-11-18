@@ -150,6 +150,16 @@ export type InquiryInput = z.infer<typeof InquiryInputSchema>;
 
 // ---- Listing input (掲載申請・管理画面で共通) -------------------------------
 
+/** 掲載の文字入力の上限（スキーマとフォームの maxLength で共用） */
+export const LISTING_TEXT_MAX = {
+  city: 100,
+  name: 200,
+  description: 5000,
+  address: 300,
+  phone: 20,
+  websiteUrl: 500,
+} as const;
+
 const optionalText = (max: number) => z.preprocess(emptyToUndefined, z.string().trim().max(max).optional());
 
 /** LocalizedText の入力。en 必須、他言語は任意（空欄は未入力扱い） */
@@ -165,14 +175,14 @@ export const localizedTextInput = (max: number) =>
 export const ListingFieldsSchema = z.object({
   category: z.enum(SERVICE_CATEGORIES),
   prefecture: z.enum(PREFECTURE_CODES),
-  city: optionalText(100),
+  city: optionalText(LISTING_TEXT_MAX.city),
   supportedLanguages: z
     .array(z.enum(SUPPORTED_LOCALES))
     .min(1)
     .transform((langs) => [...new Set(langs)]),
-  name: localizedTextInput(200),
-  description: localizedTextInput(5000),
-  address: localizedTextInput(300).optional(),
+  name: localizedTextInput(LISTING_TEXT_MAX.name),
+  description: localizedTextInput(LISTING_TEXT_MAX.description),
+  address: localizedTextInput(LISTING_TEXT_MAX.address).optional(),
   phone: z.preprocess(
     emptyToUndefined,
     z
@@ -181,7 +191,7 @@ export const ListingFieldsSchema = z.object({
       .regex(/^\+?[0-9()\- ]{6,20}$/)
       .optional(),
   ),
-  websiteUrl: z.preprocess(emptyToUndefined, z.url({ protocol: /^https?$/ }).max(500).optional()),
+  websiteUrl: z.preprocess(emptyToUndefined, z.url({ protocol: /^https?$/ }).max(LISTING_TEXT_MAX.websiteUrl).optional()),
 });
 export type ListingFields = z.infer<typeof ListingFieldsSchema>;
 
@@ -223,7 +233,8 @@ export interface UploadTicket {
 
 /** URL 用 slug: 英小文字・数字をハイフンで区切る */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-export const SlugSchema = z.string().trim().min(1).max(100).regex(SLUG_PATTERN);
+export const SLUG_MAX = 100;
+export const SlugSchema = z.string().trim().min(1).max(SLUG_MAX).regex(SLUG_PATTERN);
 
 /** 管理画面での掲載作成・更新（PUT は全項目置き換え） */
 export const AdminServiceInputSchema = ListingFieldsSchema.extend({
