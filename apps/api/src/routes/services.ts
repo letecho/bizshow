@@ -1,15 +1,10 @@
-import { Router, type RequestHandler } from 'express';
+import { Router } from 'express';
 import { ServiceSearchQuerySchema, appCache, type ServiceSearchQuery } from '@fss/shared';
 import { HttpError } from '../middleware/errors';
 import type { ServiceRepository } from '../repositories/serviceRepository';
+import { asyncHandler } from './asyncHandler';
 
 const CACHE_TTL_SEC = 60;
-
-/** Express 4 は async の例外を拾わないため next に渡す */
-const asyncHandler =
-  (fn: RequestHandler): RequestHandler =>
-  (req, res, next) =>
-    Promise.resolve(fn(req, res, next)).catch(next);
 
 /** 未指定項目を除きキー順を固定したキャッシュキー */
 function searchCacheKey(query: ServiceSearchQuery): string {

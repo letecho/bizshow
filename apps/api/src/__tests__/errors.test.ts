@@ -2,8 +2,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { z } from 'zod';
-import { createApp } from '../app';
-import { createInMemoryServiceRepository } from '../repositories/inMemoryServiceRepository';
 import { testApp } from './helpers/fixtures';
 import { HttpError, errorHandler, notFoundHandler } from '../middleware/errors';
 
@@ -81,7 +79,7 @@ describe('CORS', () => {
 describe('access log', () => {
   it('writes one JSON line per request and skips /health', async () => {
     const lines: string[] = [];
-    const app = createApp({ serviceRepository: createInMemoryServiceRepository([]), log: (l) => lines.push(l) });
+    const app = testApp([], { log: (l) => lines.push(l) });
     await request(app).get('/health');
     await request(app).get('/no-such-path?x=1');
     expect(lines).toHaveLength(1);

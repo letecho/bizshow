@@ -131,3 +131,17 @@ export interface ServiceDetail extends ServiceSummary {
   /** ISO 8601 */
   updatedAt: string;
 }
+
+// ---- Inquiry ----------------------------------------------------------------
+
+export const INQUIRY_MESSAGE_MAX = 2000;
+
+/** POST /api/v1/inquiries の入力。website はボット検出用のハニーポット（人は空のまま送る） */
+export const InquiryInputSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().max(254).pipe(z.email()),
+  message: z.string().trim().min(1).max(INQUIRY_MESSAGE_MAX),
+  locale: z.enum(SUPPORTED_LOCALES),
+  website: z.string().max(500).optional(),
+});
+export type InquiryInput = z.infer<typeof InquiryInputSchema>;

@@ -48,5 +48,21 @@
     "terms": "Điều khoản sử dụng",
     "privacy": "Chính sách bảo mật",
     "tokushoho": "Thông tin theo Luật Giao dịch Thương mại Đặc định"
+  },
+  "contact": {
+    "title": "Liên hệ",
+    "lead": "Nếu có câu hỏi về trang web hoặc thông tin đăng tải, hãy gửi tin nhắn cho chúng tôi. Chúng tôi sẽ trả lời qua email.",
+    "name": "Họ tên",
+    "email": "Email",
+    "message": "Nội dung",
+    "submit": "Gửi",
+    "sending": "Đang gửi…",
+    "sent": "Cảm ơn bạn. Tin nhắn đã được gửi.",
+    "invalid": "Vui lòng kiểm tra họ tên, email và nội dung (tối đa 2.000 ký tự).",
+    "rateLimited": "Bạn đã gửi quá nhiều lần. Vui lòng thử lại sau.",
+    "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau."
+  },
+  "footer": {
+    "contact": "Liên hệ"
   }
 }

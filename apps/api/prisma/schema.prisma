@@ -34,3 +34,16 @@ model ServiceListing {
   @@index([category, prefecture])
   @@index([isPublished])
 }
+
+/// お問い合わせ（F-103）
+model Inquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  /// 送信時の表示言語（SupportedLocale）
+  locale    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

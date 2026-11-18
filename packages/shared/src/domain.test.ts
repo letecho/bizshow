@@ -3,6 +3,7 @@ import {
   PREFECTURES,
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
+  InquiryInputSchema,
   ServiceSearchQuerySchema,
   isSupportedLocale,
   pickText,
@@ -62,5 +63,20 @@ describe('ServiceSearchQuerySchema', () => {
     ['q over 100 chars', { q: 'a'.repeat(101) }],
   ])('rejects %s', (_label, input) => {
     expect(ServiceSearchQuerySchema.safeParse(input).success).toBe(false);
+  });
+});
+
+describe('InquiryInputSchema', () => {
+  const valid = { name: 'Nguyen', email: 'a@example.com', message: 'Hello', locale: 'vi' };
+
+  it('accepts a valid inquiry and trims fields', () => {
+    expect(InquiryInputSchema.parse({ ...valid, name: '  Nguyen ' }).name).toBe('Nguyen');
+  });
+
+  it('rejects an invalid email, unsupported locale and too long message', () => {
+    expect(InquiryInputSchema.safeParse({ ...valid, email: 'nope' }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, locale: 'fr' }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2001) }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2000) }).success).toBe(true);
   });
 });
