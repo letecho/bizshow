@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { ListingRequestInputSchema, PREFECTURES, SERVICE_CATEGORIES, type SupportedLocale } from '@fss/shared/domain';
+import {
+  LISTING_TEXT_MAX,
+  ListingRequestInputSchema,
+  PREFECTURES,
+  SERVICE_CATEGORIES,
+  type SupportedLocale,
+} from '@fss/shared/domain';
 import type { Dictionary } from '../i18n/dictionaries';
 import { localeNames, locales } from '../i18n/config';
 import { prefectureName } from '../i18n/labels';
@@ -18,7 +24,7 @@ function LocalizedFields({
   required,
   multiline,
 }: {
-  field: string;
+  field: 'name' | 'description' | 'address';
   legend: string;
   required?: boolean;
   multiline?: boolean;
@@ -33,9 +39,14 @@ function LocalizedFields({
             {required && l === 'en' ? ' *' : ''}
           </span>
           {multiline ? (
-            <textarea name={`${field}_${l}`} rows={4} required={required && l === 'en'} />
+            <textarea
+              name={`${field}_${l}`}
+              rows={4}
+              required={required && l === 'en'}
+              maxLength={LISTING_TEXT_MAX[field]}
+            />
           ) : (
-            <input name={`${field}_${l}`} required={required && l === 'en'} />
+            <input name={`${field}_${l}`} required={required && l === 'en'} maxLength={LISTING_TEXT_MAX[field]} />
           )}
         </label>
       ))}
@@ -113,7 +124,7 @@ export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dic
       </label>
       <label className={styles.field}>
         <span>{t.city}</span>
-        <input name="city" maxLength={100} />
+        <input name="city" maxLength={LISTING_TEXT_MAX.city} />
       </label>
       <fieldset className={styles.fieldset}>
         <legend>{dict.detail.languages} *</legend>
@@ -130,11 +141,11 @@ export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dic
       <LocalizedFields field="address" legend={dict.detail.address} />
       <label className={styles.field}>
         <span>{dict.detail.phone}</span>
-        <input name="phone" type="tel" maxLength={20} />
+        <input name="phone" type="tel" maxLength={LISTING_TEXT_MAX.phone} />
       </label>
       <label className={styles.field}>
         <span>{dict.detail.website}</span>
-        <input name="websiteUrl" type="url" maxLength={500} placeholder="https://" />
+        <input name="websiteUrl" type="url" maxLength={LISTING_TEXT_MAX.websiteUrl} placeholder="https://" />
       </label>
       <label className={styles.field}>
         <span>{t.contactName} *</span>
