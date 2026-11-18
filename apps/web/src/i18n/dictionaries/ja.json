@@ -8,5 +8,30 @@
   },
   "home": {
     "lead": "医療・ビザ相談・住居・通信など、多言語対応サービスを地域・言語別に検索できます。"
+  },
+  "search": {
+    "keyword": "キーワード",
+    "keywordPlaceholder": "例: クリニック、ビザ",
+    "category": "カテゴリ",
+    "prefecture": "都道府県",
+    "language": "対応言語",
+    "any": "すべて",
+    "submit": "検索",
+    "results": "{total} 件",
+    "empty": "条件に合うサービスが見つかりませんでした。条件を変えてお試しください。",
+    "error": "サービスを読み込めませんでした。時間をおいて再度お試しください。",
+    "prev": "前へ",
+    "next": "次へ",
+    "details": "詳細を見る"
+  },
+  "categories": {
+    "medical": "医療",
+    "legal": "法律・ビザ",
+    "housing": "住まい",
+    "telecom": "通信",
+    "finance": "銀行・お金",
+    "education": "教育",
+    "work": "仕事",
+    "daily": "生活"
   }
 }

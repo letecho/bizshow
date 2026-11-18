@@ -8,5 +8,30 @@
   },
   "home": {
     "lead": "Find multilingual services such as clinics, visa consultation, housing and mobile phones by area and language."
+  },
+  "search": {
+    "keyword": "Keyword",
+    "keywordPlaceholder": "e.g. clinic, visa",
+    "category": "Category",
+    "prefecture": "Prefecture",
+    "language": "Supported language",
+    "any": "All",
+    "submit": "Search",
+    "results": "{total} results",
+    "empty": "No services match your search. Try changing the conditions.",
+    "error": "Could not load services. Please try again later.",
+    "prev": "Previous",
+    "next": "Next",
+    "details": "View details"
+  },
+  "categories": {
+    "medical": "Medical",
+    "legal": "Legal & Visa",
+    "housing": "Housing",
+    "telecom": "Phone & Internet",
+    "finance": "Banking & Money",
+    "education": "Education",
+    "work": "Work",
+    "daily": "Daily Life"
   }
 }

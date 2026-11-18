@@ -8,5 +8,30 @@
   },
   "home": {
     "lead": "Tìm các dịch vụ đa ngôn ngữ như y tế, tư vấn visa, nhà ở và điện thoại theo khu vực và ngôn ngữ."
+  },
+  "search": {
+    "keyword": "Từ khóa",
+    "keywordPlaceholder": "VD: phòng khám, visa",
+    "category": "Danh mục",
+    "prefecture": "Tỉnh/Thành phố",
+    "language": "Ngôn ngữ hỗ trợ",
+    "any": "Tất cả",
+    "submit": "Tìm kiếm",
+    "results": "{total} kết quả",
+    "empty": "Không tìm thấy dịch vụ phù hợp. Hãy thử thay đổi điều kiện.",
+    "error": "Không thể tải dịch vụ. Vui lòng thử lại sau.",
+    "prev": "Trước",
+    "next": "Tiếp",
+    "details": "Xem chi tiết"
+  },
+  "categories": {
+    "medical": "Y tế",
+    "legal": "Pháp lý & Visa",
+    "housing": "Nhà ở",
+    "telecom": "Điện thoại & Internet",
+    "finance": "Ngân hàng & Tiền",
+    "education": "Giáo dục",
+    "work": "Việc làm",
+    "daily": "Đời sống"
   }
 }
