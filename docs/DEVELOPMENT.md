@@ -44,13 +44,17 @@ AIの着手順: `ai-ready` かつ `phase:poc` → `phase:mvp` の順、同フェ
 
 | ワークフロー | 契機 | 内容 |
 |---|---|---|
-| `ci.yml` | PR / main push / 手動 | `verify`: install → prisma generate → turbo lint/typecheck/test/build、`secret-scan`: gitleaks |
+| `ci.yml` | PR / main push / 手動 | `verify`: install → prisma generate → turbo lint/typecheck/test/build、`secret-scan`: gitleaks、`e2e`: postgres → migrate+seed → Playwright（トップ→絞込→詳細） |
 | `lockfile-sync.yml` | main以外への package.json 変更push | `pnpm-lock.yaml` を再生成・コミットし CI を再起動（AI/MCP経由のコミット対策） |
 | `deploy.yml` | main push / 手動 | `vars.DEPLOY_ENABLED == 'true'` の時のみ。ECR push → stg → 本番（Environment承認） |
 | `labels.yml` | labels.json 変更 / 手動 | ラベル同期 |
 | Dependabot | 毎週月曜 | minor/patch をグループ化。メジャー更新は自動PRしない（計画的にIssue化） |
 
 ローカルでCI相当: `pnpm verify`
+
+ローカル動作確認:
+- 一括起動: `docker compose --profile app up --build` → http://localhost:3000（postgres → migrate + seed → api:4000 → web:3000）
+- E2E: `docker compose up -d postgres` → `pnpm --filter api exec prisma migrate deploy && pnpm --filter api db:seed` → `pnpm --filter web test:e2e`（api / web は自動起動。初回は `pnpm --filter web exec playwright install chromium`）
 
 ## 5. Definition of Done
 

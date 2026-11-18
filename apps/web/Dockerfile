@@ -3,6 +3,8 @@ RUN corepack enable
 
 FROM base AS builder
 WORKDIR /app
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm turbo run build --filter=web
