@@ -1,7 +1,7 @@
 name: 不具合
 description: バグ報告
 title: "[BUG] "
-labels: ["type:bug"]
+labels: ["type:bug", "needs-spec"]
 body:
   - type: textarea
     id: what
@@ -19,6 +19,20 @@ body:
     id: expected
     attributes:
       label: 期待する動作
+    validations:
+      required: true
+  - type: textarea
+    id: cause
+    attributes:
+      label: 原因・修正方針（分かる範囲で）
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 重要度
+      options:
+        - S1 致命（起動不可・データ破損・セキュリティ）
+        - S2 重大（主要機能が使えない、回避策あり）
+        - S3 軽微（体裁・開発体験）
     validations:
       required: true
   - type: input
