@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { app } from '../main';
+import { createApp } from '../app';
+
+const app = createApp();
 
 describe('GET /health', () => {
   it('returns ok with cache mode', async () => {
