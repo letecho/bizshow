@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { INQUIRY_MESSAGE_MAX, InquiryInputSchema, type SupportedLocale } from '@fss/shared/domain';
 import type { Dictionary } from '../i18n/dictionaries';
 import { API_URL } from '../lib/api';
-import styles from './ContactForm.module.css';
+import styles from './Form.module.css';
 
 type Status = 'idle' | 'sending' | 'sent' | 'invalid' | 'rateLimited' | 'error';
 

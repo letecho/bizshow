@@ -145,3 +145,50 @@ export const InquiryInputSchema = z.object({
   website: z.string().max(500).optional(),
 });
 export type InquiryInput = z.infer<typeof InquiryInputSchema>;
+
+// ---- Listing input (掲載申請・管理画面で共通) -------------------------------
+
+const optionalText = (max: number) => z.preprocess(emptyToUndefined, z.string().trim().max(max).optional());
+
+/** LocalizedText の入力。en 必須、他言語は任意（空欄は未入力扱い） */
+export const localizedTextInput = (max: number) =>
+  z.object({
+    en: z.string().trim().min(1).max(max),
+    ja: optionalText(max),
+    zh: optionalText(max),
+    vi: optionalText(max),
+  });
+
+/** 掲載内容（ServiceListing 相当の入力項目。slug・公開状態は含まない） */
+export const ListingFieldsSchema = z.object({
+  category: z.enum(SERVICE_CATEGORIES),
+  prefecture: z.enum(PREFECTURE_CODES),
+  city: optionalText(100),
+  supportedLanguages: z
+    .array(z.enum(SUPPORTED_LOCALES))
+    .min(1)
+    .transform((langs) => [...new Set(langs)]),
+  name: localizedTextInput(200),
+  description: localizedTextInput(5000),
+  address: localizedTextInput(300).optional(),
+  phone: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9()\- ]{6,20}$/)
+      .optional(),
+  ),
+  websiteUrl: z.preprocess(emptyToUndefined, z.url({ protocol: /^https?$/ }).max(500).optional()),
+});
+export type ListingFields = z.infer<typeof ListingFieldsSchema>;
+
+export const LISTING_REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export type ListingRequestStatus = (typeof LISTING_REQUEST_STATUSES)[number];
+
+/** POST /api/v1/listing-requests の入力（掲載内容＋担当者） */
+export const ListingRequestInputSchema = ListingFieldsSchema.extend({
+  contactName: z.string().trim().min(1).max(100),
+  contactEmail: z.string().trim().max(254).pipe(z.email()),
+});
+export type ListingRequestInput = z.infer<typeof ListingRequestInputSchema>;

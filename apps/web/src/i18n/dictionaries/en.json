@@ -63,6 +63,22 @@
     "error": "Could not send your message. Please try again later."
   },
   "footer": {
-    "contact": "Contact us"
+    "contact": "Contact us",
+    "apply": "Apply for a listing"
+  },
+  "apply": {
+    "title": "Apply for a listing",
+    "lead": "Businesses that support foreign residents can apply to be listed. We will review your application and contact you by email.",
+    "requiredHint": "* Required. Please enter the service name and description in English at least.",
+    "city": "City / Ward",
+    "serviceName": "Service name",
+    "description": "Description",
+    "contactName": "Contact person",
+    "contactEmail": "Contact email",
+    "submit": "Submit application",
+    "sending": "Submitting…",
+    "sent": "Thank you. We have received your application and will contact you after review.",
+    "invalid": "Please check the required fields (category, prefecture, languages, English name and description, contact person and email).",
+    "error": "Could not submit your application. Please try again later."
   }
 }

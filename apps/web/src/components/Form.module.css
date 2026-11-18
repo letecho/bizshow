@@ -57,3 +57,37 @@
   border-radius: 12px;
   padding: 16px;
 }
+
+.fieldset {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.fieldset legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.field select {
+  font: inherit;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.hint {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0;
+}

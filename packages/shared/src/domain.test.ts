@@ -4,6 +4,7 @@ import {
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
   InquiryInputSchema,
+  ListingRequestInputSchema,
   ServiceSearchQuerySchema,
   isSupportedLocale,
   pickText,
@@ -78,5 +79,37 @@ describe('InquiryInputSchema', () => {
     expect(InquiryInputSchema.safeParse({ ...valid, locale: 'fr' }).success).toBe(false);
     expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2001) }).success).toBe(false);
     expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2000) }).success).toBe(true);
+  });
+});
+
+describe('ListingRequestInputSchema', () => {
+  const valid = {
+    category: 'legal',
+    prefecture: 'tokyo',
+    supportedLanguages: ['ja', 'en', 'en'],
+    name: { en: 'Visa Office', ja: '', vi: 'Văn phòng visa' },
+    description: { en: 'Visa support' },
+    contactName: 'Tanaka',
+    contactEmail: 'tanaka@example.com',
+  };
+
+  it('accepts a minimal request, de-duplicates languages and drops empty translations', () => {
+    const parsed = ListingRequestInputSchema.parse(valid);
+    expect(parsed.supportedLanguages).toEqual(['ja', 'en']);
+    expect(parsed.name).toEqual({ en: 'Visa Office', vi: 'Văn phòng visa' });
+  });
+
+  it('rejects missing required fields', () => {
+    expect(ListingRequestInputSchema.safeParse({ ...valid, name: { ja: '名前のみ' } }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, supportedLanguages: [] }).success).toBe(false);
+    const { contactEmail: _omit, ...withoutEmail } = valid;
+    expect(ListingRequestInputSchema.safeParse(withoutEmail).success).toBe(false);
+  });
+
+  it('validates website URL and phone format', () => {
+    expect(ListingRequestInputSchema.safeParse({ ...valid, websiteUrl: 'javascript:alert(1)' }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, websiteUrl: 'https://example.com' }).success).toBe(true);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, phone: '03-1234-5678' }).success).toBe(true);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, phone: 'call me' }).success).toBe(false);
   });
 });
