@@ -90,8 +90,8 @@ jobs:
           pnpm --filter api exec prisma generate
           pnpm --filter api exec prisma migrate deploy
           pnpm --filter api db:seed
-      - name: Build web
-        run: pnpm turbo run build --filter=web
+      - name: Build web / api
+        run: pnpm turbo run build --filter=web --filter=api
       - name: Install Playwright browser
         run: pnpm --filter web exec playwright install --with-deps chromium
       - name: E2E
