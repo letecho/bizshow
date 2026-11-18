@@ -3,6 +3,8 @@ import express from 'express';
 import request from 'supertest';
 import { z } from 'zod';
 import { createApp } from '../app';
+import { createInMemoryServiceRepository } from '../repositories/inMemoryServiceRepository';
+import { testApp } from './helpers/fixtures';
 import { HttpError, errorHandler, notFoundHandler } from '../middleware/errors';
 
 function appWith(register: (app: express.Express) => void) {
@@ -20,7 +22,7 @@ afterEach(() => {
 
 describe('error handling', () => {
   it('returns 404 JSON for unknown routes', async () => {
-    const res = await request(createApp()).get('/no-such-path');
+    const res = await request(testApp()).get('/no-such-path');
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found: GET /no-such-path' } });
   });
@@ -65,13 +67,13 @@ describe('error handling', () => {
 
 describe('CORS', () => {
   it('allows any origin when WEB_ORIGIN is unset', async () => {
-    const res = await request(createApp()).get('/health').set('Origin', 'https://example.com');
+    const res = await request(testApp()).get('/health').set('Origin', 'https://example.com');
     expect(res.headers['access-control-allow-origin']).toBe('*');
   });
 
   it('uses WEB_ORIGIN when set', async () => {
     process.env.WEB_ORIGIN = 'https://web.example.com';
-    const res = await request(createApp()).get('/health').set('Origin', 'https://web.example.com');
+    const res = await request(testApp()).get('/health').set('Origin', 'https://web.example.com');
     expect(res.headers['access-control-allow-origin']).toBe('https://web.example.com');
   });
 });
@@ -79,7 +81,7 @@ describe('CORS', () => {
 describe('access log', () => {
   it('writes one JSON line per request and skips /health', async () => {
     const lines: string[] = [];
-    const app = createApp({ log: (l) => lines.push(l) });
+    const app = createApp({ serviceRepository: createInMemoryServiceRepository([]), log: (l) => lines.push(l) });
     await request(app).get('/health');
     await request(app).get('/no-such-path?x=1');
     expect(lines).toHaveLength(1);

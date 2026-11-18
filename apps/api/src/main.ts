@@ -1,12 +1,11 @@
+import { PrismaClient } from '@prisma/client';
 import { createApp } from './app';
+import { createPrismaServiceRepository } from './repositories/prismaServiceRepository';
 
 const port = Number(process.env.PORT || 4000);
-const app = createApp();
+const prisma = new PrismaClient();
+const app = createApp({ serviceRepository: createPrismaServiceRepository(prisma) });
 
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, () => {
-    console.log(`API server listening on port ${port}`);
-  });
-}
-
-export { app };
+app.listen(port, () => {
+  console.log(`API server listening on port ${port}`);
+});
