@@ -3,11 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { appCache } from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
+import { requireAdmin, type AuthOptions } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 import type { Mailer } from './mail/mailer';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
 import type { ServiceRepository } from './repositories/serviceRepository';
+import { adminRouter } from './routes/admin';
 import { inquiriesRouter } from './routes/inquiries';
 import { listingRequestsRouter } from './routes/listingRequests';
 import { servicesRouter } from './routes/services';
@@ -17,6 +19,8 @@ export interface AppOptions {
   inquiryRepository: InquiryRepository;
   listingRequestRepository: ListingRequestRepository;
   mailer: Mailer;
+  /** 管理 API の認証（AUTH_MODE=dev | cognito） */
+  auth: AuthOptions;
   /** お問い合わせの運営通知先（既定: env MAIL_OPERATOR_TO） */
   operatorEmail?: string;
   /** アクセスログの出力先（既定: console.log、テスト時は出力しない） */
@@ -52,6 +56,8 @@ export function createApp(options: AppOptions) {
   );
 
   app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository));
+
+  app.use('/api/v1/admin', adminRouter(requireAdmin(options.auth)));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

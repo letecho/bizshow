@@ -46,6 +46,7 @@ export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partia
     inquiryRepository: createInMemoryInquiryRepository(),
     listingRequestRepository: createInMemoryListingRequestRepository(),
     mailer: createLogMailer(() => {}),
+    auth: { mode: 'dev' },
     ...overrides,
   });
 }

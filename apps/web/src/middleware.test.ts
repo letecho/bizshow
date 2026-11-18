@@ -14,3 +14,21 @@ describe('middleware', () => {
     expect(res.headers.get('location')).toBe('http://localhost:3000/en');
   });
 });
+
+describe('middleware (admin)', () => {
+  it('redirects /admin pages to the login page without the token cookie', () => {
+    const res = middleware(new NextRequest('http://localhost:3000/admin/services'));
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toBe('http://localhost:3000/admin/login');
+  });
+
+  it('lets the login and auth routes through', () => {
+    expect(middleware(new NextRequest('http://localhost:3000/admin/login')).headers.get('location')).toBeNull();
+    expect(middleware(new NextRequest('http://localhost:3000/admin/auth/callback')).headers.get('location')).toBeNull();
+  });
+
+  it('lets requests with the token cookie through', () => {
+    const req = new NextRequest('http://localhost:3000/admin', { headers: { cookie: 'admin_id_token=abc' } });
+    expect(middleware(req).headers.get('location')).toBeNull();
+  });
+});

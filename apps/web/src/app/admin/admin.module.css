@@ -1,0 +1,49 @@
+.body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.button {
+  font: inherit;
+  display: inline-block;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #0f766e;
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.secondary {
+  composes: button;
+  background: #475569;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
