@@ -1,0 +1,14 @@
+.nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.link {
+  color: #0f766e;
+}
+
+.current {
+  font-weight: 700;
+}

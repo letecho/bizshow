@@ -1,0 +1,12 @@
+{
+  "site": {
+    "title": "Multilingual Service Finder in Japan",
+    "description": "Search medical, legal, housing, and daily life services in Japan in your language."
+  },
+  "header": {
+    "language": "Language"
+  },
+  "home": {
+    "lead": "Find multilingual services such as clinics, visa consultation, housing and mobile phones by area and language."
+  }
+}
