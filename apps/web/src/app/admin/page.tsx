@@ -24,8 +24,8 @@ export default async function AdminServicesPage({ searchParams }: Props) {
     <main className={styles.main}>
       <AdminHeader title="掲載一覧" />
       <form method="get" className={styles.filters} role="search">
-        <input type="search" name="q" defaultValue={q} placeholder="名前・説明・slug" maxLength={100} />
-        <select name="published" defaultValue={published}>
+        <input type="search" name="q" defaultValue={q} placeholder="名前・説明・slug" maxLength={100} aria-label="キーワード" />
+        <select name="published" defaultValue={published} aria-label="公開状態">
           <option value="">すべて</option>
           <option value="true">公開</option>
           <option value="false">非公開</option>
