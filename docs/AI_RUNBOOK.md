@@ -135,7 +135,8 @@
   - Docker が使えない場合: ローカルの PostgreSQL 16（`service postgresql start`、ユーザー `app` / DB `foreign_service_dev`）
 - アプリ: リポジトリ直下に `.env`（`cp .env.example .env`）→ `pnpm db:migrate && pnpm db:seed && pnpm dev`
 - ブラウザ確認: プリインストールの Playwright（`require('playwright')`、`chromium.launch()`）
-- `pnpm verify` を再実行して `web#typecheck` が TS6053 で落ちたら `rm -rf apps/web/.next` してから `pnpm verify --concurrency=1`（B-004）
+- `pnpm verify` 再実行時の `web#typecheck` TS6053（B-004）は #72 で修正済み（web の typecheck は build の後に実行）。再発したらバグとして起票する
+- API 停止時の表示（品質管理など）を確かめるときは、`pnpm dev` を止めると web も止まるため、API を止めた後に `pnpm --filter web dev` で web だけを起動し直す
 - Docker イメージのビルド: Alpine のパッケージ CDN は sandbox から 403。検証が必要なときだけ、**一時コピー**の Dockerfile でプロキシ CA・プロキシ設定を追加し `apk add openssl` を `ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3` に置き換え、`build: { network: host }` の override でビルドする（コミットはしない）
 
 ---
@@ -197,5 +198,6 @@ AI は実行中に手順の改善点（新しい知見、手順の抜け、よ�
 ### 改訂履歴
 | 日付 | PR | 内容 |
 |---|---|---|
+| 2026-11-18 | #74 | 3 章: B-004 の回避手順を削除（#72 で修正済み）、API 停止時の確認方法を追記 |
 | 2026-11-18 | #69 | 2.8 品質管理（品質管理票の保守・検証・バグ化・UI/UX 提案）を追加 |
 | 2026-11-18 | #67 | 初版。プロンプトの「毎回の手順」「技術メモ」を移管し、バグ一覧の同期・着手順・ローカル検証・改訂ルールを追加 |
