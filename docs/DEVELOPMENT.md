@@ -54,7 +54,7 @@ AIの着手順: `ai-ready` かつ `phase:poc` → `phase:mvp` の順、同フェ
 
 ローカル動作確認:
 - 一括起動: `docker compose --profile app up --build` → http://localhost:3000（postgres → migrate + seed → api:4000 → web:3000）
-- E2E: `docker compose up -d postgres` → `pnpm --filter api exec prisma migrate deploy && pnpm --filter api db:seed` → `pnpm --filter web test:e2e`（api / web は自動起動。初回は `pnpm --filter web exec playwright install chromium`）
+- E2E: `docker compose up -d postgres` → `pnpm db:migrate && pnpm db:seed` → `pnpm --filter web test:e2e`（api / web は自動起動。初回は `pnpm --filter web exec playwright install chromium`）
 
 ## 5. Definition of Done
 
