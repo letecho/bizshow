@@ -1,5 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import { ServiceSearchQuerySchema, appCache, type ServiceSearchQuery } from '@fss/shared';
+import { HttpError } from '../middleware/errors';
 import type { ServiceRepository } from '../repositories/serviceRepository';
 
 const CACHE_TTL_SEC = 60;
@@ -35,6 +36,27 @@ export function servicesRouter(repo: ServiceRepository): Router {
 
       const { items, total } = await repo.search(query);
       const body = { data: items, meta: { page: query.page, limit: query.limit, total } };
+      await appCache.set(key, JSON.stringify(body), CACHE_TTL_SEC);
+      res.json(body);
+    }),
+  );
+
+  router.get(
+    '/:slug',
+    asyncHandler(async (req, res) => {
+      const slug = String(req.params.slug);
+      const key = `services:detail:${slug}`;
+
+      const cached = await appCache.get(key);
+      if (cached) {
+        res.json(JSON.parse(cached));
+        return;
+      }
+
+      const service = await repo.findBySlug(slug);
+      if (!service) throw new HttpError(404, 'NOT_FOUND', `Service not found: ${slug}`);
+
+      const body = { data: service };
       await appCache.set(key, JSON.stringify(body), CACHE_TTL_SEC);
       res.json(body);
     }),

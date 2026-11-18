@@ -32,5 +32,12 @@ export function createInMemoryServiceRepository(records: InMemoryServiceRecord[]
         }));
       return { items, total: matched.length };
     },
+
+    async findBySlug(slug) {
+      const record = records.find((r) => r.slug === slug && r.isPublished);
+      if (!record) return null;
+      const { isPublished: _isPublished, searchText: _searchText, ...detail } = record;
+      return detail;
+    },
   };
 }

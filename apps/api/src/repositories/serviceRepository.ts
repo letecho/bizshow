@@ -1,4 +1,4 @@
-import type { ServiceSearchQuery, ServiceSummary } from '@fss/shared';
+import type { ServiceDetail, ServiceSearchQuery, ServiceSummary } from '@fss/shared';
 
 export interface ServiceSearchResult {
   items: ServiceSummary[];
@@ -9,4 +9,6 @@ export interface ServiceSearchResult {
 export interface ServiceRepository {
   /** 公開中のみ・updatedAt 降順・ページング */
   search(query: ServiceSearchQuery): Promise<ServiceSearchResult>;
+  /** 公開中のみ。未公開・不存在は null */
+  findBySlug(slug: string): Promise<ServiceDetail | null>;
 }
