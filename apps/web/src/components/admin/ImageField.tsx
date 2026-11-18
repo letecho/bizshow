@@ -45,7 +45,7 @@ export function ImageField({ initialKey, initialUrl }: { initialKey?: string | n
       <input type="hidden" name="imageKey" value={key} />
       {url && <img src={url} alt="掲載画像のプレビュー" className={styles.preview} />}
       <div className={formStyles.checks}>
-        <input type="file" accept={IMAGE_CONTENT_TYPES.join(',')} onChange={onChange} disabled={status === 'uploading'} />
+        <input type="file" accept={IMAGE_CONTENT_TYPES.join(',')} onChange={onChange} disabled={status === 'uploading'} aria-label="画像ファイル" />
         {key && (
           <button
             type="button"
