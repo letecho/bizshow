@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
         headers: securityHeaders({
           apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
           isDev: process.env.NODE_ENV !== 'production',
+          uploadOrigin: process.env.UPLOAD_ORIGIN || undefined,
         }),
       },
     ];
