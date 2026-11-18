@@ -9,18 +9,28 @@ datasource db {
 
 model ServiceListing {
   id                 String   @id @default(cuid())
+  slug               String   @unique
+  /// SERVICE_CATEGORIES (packages/shared)
   category           String
+  /// PREFECTURES[].code (packages/shared)
   prefecture         String
+  city               String?
+  /// SupportedLocale[]
   supportedLanguages String[]
-  titleJa            String
-  titleEn            String
-  titleZh            String?
-  titleVi            String?
-  descriptionJa      String
-  descriptionEn      String
+  /// LocalizedText
+  name               Json
+  /// LocalizedText
+  description        Json
+  /// LocalizedText
+  address            Json?
+  phone              String?
+  websiteUrl         String?
+  /// 全言語の name + description を小文字で連結した検索用テキスト
+  searchText         String
   isPublished        Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   @@index([category, prefecture])
+  @@index([isPublished])
 }
