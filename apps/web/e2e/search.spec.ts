@@ -20,3 +20,14 @@ test('top → filter by category → service detail', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(name!);
   await expect(page.getByText('Legal & Visa')).toBeVisible();
 });
+
+// B-005: /[locale] 配下の 404 でも html lang がロケールと一致し、文言がその言語で表示される
+for (const path of ['/ja/services/not-exist', '/ja/legal/not-exist', '/ja/no-such-page']) {
+  test(`404 is localized: ${path}`, async ({ page }) => {
+    const res = await page.goto(path);
+    expect(res?.status()).toBe(404);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('ページが見つかりません');
+    await expect(page.getByRole('link', { name: '検索に戻る' })).toHaveAttribute('href', '/ja');
+  });
+}

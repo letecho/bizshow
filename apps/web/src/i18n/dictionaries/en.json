@@ -80,5 +80,10 @@
     "sent": "Thank you. We have received your application and will contact you after review.",
     "invalid": "Please check the required fields (category, prefecture, languages, English name and description, contact person and email).",
     "error": "Could not submit your application. Please try again later."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist or may have been moved.",
+    "back": "Back to search"
   }
 }

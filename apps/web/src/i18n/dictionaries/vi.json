@@ -80,5 +80,10 @@
     "sent": "Cảm ơn bạn. Chúng tôi đã nhận được đơn đăng ký và sẽ liên hệ sau khi xem xét.",
     "invalid": "Vui lòng kiểm tra các mục bắt buộc (danh mục, tỉnh/thành, ngôn ngữ, tên và mô tả bằng tiếng Anh, người phụ trách và email).",
     "error": "Không thể gửi đơn đăng ký. Vui lòng thử lại sau."
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "body": "Trang bạn đang tìm không tồn tại hoặc đã được chuyển đi.",
+    "back": "Quay lại tìm kiếm"
   }
 }
