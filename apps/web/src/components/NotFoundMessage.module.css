@@ -1,0 +1,20 @@
+.main {
+  max-width: 880px;
+  margin: 48px auto;
+  padding: 0 20px;
+}
+
+.title {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.body {
+  color: #475569;
+}
+
+.back {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 10px 0;
+}
