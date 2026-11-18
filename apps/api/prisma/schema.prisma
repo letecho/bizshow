@@ -47,3 +47,36 @@ model Inquiry {
 
   @@index([createdAt])
 }
+
+enum ListingRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+/// 事業者の掲載申請（F-104）。承認で ServiceListing を作成する（F-106）
+model ListingRequest {
+  id                 String               @id @default(cuid())
+  status             ListingRequestStatus @default(pending)
+  /// SERVICE_CATEGORIES (packages/shared)
+  category           String
+  /// PREFECTURES[].code (packages/shared)
+  prefecture         String
+  city               String?
+  /// SupportedLocale[]
+  supportedLanguages String[]
+  /// LocalizedText
+  name               Json
+  /// LocalizedText
+  description        Json
+  /// LocalizedText
+  address            Json?
+  phone              String?
+  websiteUrl         String?
+  contactName        String
+  contactEmail       String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([status, createdAt])
+}

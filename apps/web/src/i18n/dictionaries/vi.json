@@ -63,6 +63,22 @@
     "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau."
   },
   "footer": {
-    "contact": "Liên hệ"
+    "contact": "Liên hệ",
+    "apply": "Đăng ký đăng tải"
+  },
+  "apply": {
+    "title": "Đăng ký đăng tải",
+    "lead": "Doanh nghiệp cung cấp dịch vụ cho người nước ngoài tại Nhật có thể đăng ký đăng tải tại đây. Chúng tôi sẽ xem xét và liên hệ qua email.",
+    "requiredHint": "* là bắt buộc. Vui lòng nhập tên và mô tả dịch vụ ít nhất bằng tiếng Anh.",
+    "city": "Thành phố / Quận",
+    "serviceName": "Tên dịch vụ",
+    "description": "Mô tả",
+    "contactName": "Người phụ trách",
+    "contactEmail": "Email người phụ trách",
+    "submit": "Gửi đăng ký",
+    "sending": "Đang gửi…",
+    "sent": "Cảm ơn bạn. Chúng tôi đã nhận được đơn đăng ký và sẽ liên hệ sau khi xem xét.",
+    "invalid": "Vui lòng kiểm tra các mục bắt buộc (danh mục, tỉnh/thành, ngôn ngữ, tên và mô tả bằng tiếng Anh, người phụ trách và email).",
+    "error": "Không thể gửi đơn đăng ký. Vui lòng thử lại sau."
   }
 }

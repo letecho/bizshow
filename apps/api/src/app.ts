@@ -6,13 +6,16 @@ import { accessLog } from './middleware/accessLog';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 import type { Mailer } from './mail/mailer';
 import type { InquiryRepository } from './repositories/inquiryRepository';
+import type { ListingRequestRepository } from './repositories/listingRequestRepository';
 import type { ServiceRepository } from './repositories/serviceRepository';
 import { inquiriesRouter } from './routes/inquiries';
+import { listingRequestsRouter } from './routes/listingRequests';
 import { servicesRouter } from './routes/services';
 
 export interface AppOptions {
   serviceRepository: ServiceRepository;
   inquiryRepository: InquiryRepository;
+  listingRequestRepository: ListingRequestRepository;
   mailer: Mailer;
   /** お問い合わせの運営通知先（既定: env MAIL_OPERATOR_TO） */
   operatorEmail?: string;
@@ -47,6 +50,8 @@ export function createApp(options: AppOptions) {
       operatorEmail: options.operatorEmail ?? process.env.MAIL_OPERATOR_TO,
     }),
   );
+
+  app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

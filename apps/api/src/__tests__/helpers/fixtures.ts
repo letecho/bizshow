@@ -2,6 +2,7 @@ import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } 
 import { createApp, type AppOptions } from '../../app';
 import { createLogMailer } from '../../mail/mailer';
 import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
+import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
 import {
   createInMemoryServiceRepository,
   type InMemoryServiceRecord,
@@ -43,6 +44,7 @@ export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partia
   return createApp({
     serviceRepository: createInMemoryServiceRepository(records),
     inquiryRepository: createInMemoryInquiryRepository(),
+    listingRequestRepository: createInMemoryListingRequestRepository(),
     mailer: createLogMailer(() => {}),
     ...overrides,
   });

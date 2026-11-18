@@ -46,6 +46,7 @@ export default async function LocaleLayout({ children, params }: Props & { child
               </a>
             ))}
             <a href={`/${locale}/contact`}>{dict.footer.contact}</a>
+            <a href={`/${locale}/apply`}>{dict.footer.apply}</a>
           </nav>
         </footer>
       </body>
