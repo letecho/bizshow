@@ -1,5 +1,7 @@
 import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } from '@fss/shared';
-import { createApp } from '../../app';
+import { createApp, type AppOptions } from '../../app';
+import { createLogMailer } from '../../mail/mailer';
+import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
 import {
   createInMemoryServiceRepository,
   type InMemoryServiceRecord,
@@ -37,6 +39,11 @@ export function makeRecord(
   };
 }
 
-export function testApp(records: InMemoryServiceRecord[] = []) {
-  return createApp({ serviceRepository: createInMemoryServiceRepository(records) });
+export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partial<AppOptions> = {}) {
+  return createApp({
+    serviceRepository: createInMemoryServiceRepository(records),
+    inquiryRepository: createInMemoryInquiryRepository(),
+    mailer: createLogMailer(() => {}),
+    ...overrides,
+  });
 }

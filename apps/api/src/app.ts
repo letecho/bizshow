@@ -4,11 +4,18 @@ import helmet from 'helmet';
 import { appCache } from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
 import { errorHandler, notFoundHandler } from './middleware/errors';
+import type { Mailer } from './mail/mailer';
+import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ServiceRepository } from './repositories/serviceRepository';
+import { inquiriesRouter } from './routes/inquiries';
 import { servicesRouter } from './routes/services';
 
 export interface AppOptions {
   serviceRepository: ServiceRepository;
+  inquiryRepository: InquiryRepository;
+  mailer: Mailer;
+  /** お問い合わせの運営通知先（既定: env MAIL_OPERATOR_TO） */
+  operatorEmail?: string;
   /** アクセスログの出力先（既定: console.log、テスト時は出力しない） */
   log?: (line: string) => void;
 }
@@ -32,6 +39,14 @@ export function createApp(options: AppOptions) {
   });
 
   app.use('/api/v1/services', servicesRouter(options.serviceRepository));
+  app.use(
+    '/api/v1/inquiries',
+    inquiriesRouter({
+      repo: options.inquiryRepository,
+      mailer: options.mailer,
+      operatorEmail: options.operatorEmail ?? process.env.MAIL_OPERATOR_TO,
+    }),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);
