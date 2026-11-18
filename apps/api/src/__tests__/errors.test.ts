@@ -81,7 +81,7 @@ describe('access log', () => {
     const lines: string[] = [];
     const app = createApp({ log: (l) => lines.push(l) });
     await request(app).get('/health');
-    await request(app).get('/no-such-path');
+    await request(app).get('/no-such-path?x=1');
     expect(lines).toHaveLength(1);
     const entry = JSON.parse(lines[0]);
     expect(entry).toMatchObject({ method: 'GET', path: '/no-such-path', status: 404 });
