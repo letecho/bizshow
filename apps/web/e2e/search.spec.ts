@@ -29,5 +29,7 @@ for (const path of ['/ja/services/not-exist', '/ja/legal/not-exist', '/ja/no-suc
     await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('ページが見つかりません');
     await expect(page.getByRole('link', { name: '検索に戻る' })).toHaveAttribute('href', '/ja');
+    // B-007: タイトルでも 404 であることが分かる
+    await expect(page).toHaveTitle('ページが見つかりません | 在日外国人向けサービス検索');
   });
 }
