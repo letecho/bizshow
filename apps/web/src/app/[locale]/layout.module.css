@@ -21,3 +21,21 @@
   color: inherit;
   text-decoration: none;
 }
+
+.footer {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+}
+
+.footerNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.footerNav a {
+  color: #475569;
+}

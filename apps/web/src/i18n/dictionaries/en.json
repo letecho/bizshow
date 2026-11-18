@@ -43,5 +43,42 @@
     "languages": "Supported languages",
     "back": "Back to search",
     "error": "Could not load this service. Please try again later."
+  },
+  "legal": {
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "tokushoho": "Commercial Disclosure (Specified Commercial Transactions Act)"
+  },
+  "contact": {
+    "title": "Contact us",
+    "lead": "Questions about the site or listings? Send us a message and we will reply by email.",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "submit": "Send",
+    "sending": "Sending…",
+    "sent": "Thank you. Your message has been sent.",
+    "invalid": "Please check your name, email and message (up to 2,000 characters).",
+    "rateLimited": "Too many messages. Please wait a while and try again.",
+    "error": "Could not send your message. Please try again later."
+  },
+  "footer": {
+    "contact": "Contact us",
+    "apply": "Apply for a listing"
+  },
+  "apply": {
+    "title": "Apply for a listing",
+    "lead": "Businesses that support foreign residents can apply to be listed. We will review your application and contact you by email.",
+    "requiredHint": "* Required. Please enter the service name and description in English at least.",
+    "city": "City / Ward",
+    "serviceName": "Service name",
+    "description": "Description",
+    "contactName": "Contact person",
+    "contactEmail": "Contact email",
+    "submit": "Submit application",
+    "sending": "Submitting…",
+    "sent": "Thank you. We have received your application and will contact you after review.",
+    "invalid": "Please check the required fields (category, prefecture, languages, English name and description, contact person and email).",
+    "error": "Could not submit your application. Please try again later."
   }
 }

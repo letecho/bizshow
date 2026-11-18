@@ -25,6 +25,8 @@ model ServiceListing {
   address            Json?
   phone              String?
   websiteUrl         String?
+  /// 掲載画像のストレージキー（F-107）。配信は CDN 経由
+  imageKey           String?
   /// 全言語の name + description を小文字で連結した検索用テキスト
   searchText         String
   isPublished        Boolean  @default(true)
@@ -33,4 +35,50 @@ model ServiceListing {
 
   @@index([category, prefecture])
   @@index([isPublished])
+}
+
+/// お問い合わせ（F-103）
+model Inquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  /// 送信時の表示言語（SupportedLocale）
+  locale    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+enum ListingRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+/// 事業者の掲載申請（F-104）。承認で ServiceListing を作成する（F-106）
+model ListingRequest {
+  id                 String               @id @default(cuid())
+  status             ListingRequestStatus @default(pending)
+  /// SERVICE_CATEGORIES (packages/shared)
+  category           String
+  /// PREFECTURES[].code (packages/shared)
+  prefecture         String
+  city               String?
+  /// SupportedLocale[]
+  supportedLanguages String[]
+  /// LocalizedText
+  name               Json
+  /// LocalizedText
+  description        Json
+  /// LocalizedText
+  address            Json?
+  phone              String?
+  websiteUrl         String?
+  contactName        String
+  contactEmail       String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([status, createdAt])
 }

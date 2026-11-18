@@ -48,6 +48,8 @@ services:
       DATABASE_URL: postgresql://app:localpassword@postgres:5432/foreign_service_dev?schema=public
       PORT: "4000"
       WEB_ORIGIN: http://localhost:3000
+      # 管理 API はローカル用の固定管理者で通過（F-105）
+      AUTH_MODE: dev
     ports:
       - "4000:4000"
     depends_on:

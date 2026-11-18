@@ -1,5 +1,9 @@
 import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } from '@fss/shared';
-import { createApp } from '../../app';
+import { createApp, type AppOptions } from '../../app';
+import { createLogMailer } from '../../mail/mailer';
+import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
+import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
+import { createLocalStorage } from '../../storage/storage';
 import {
   createInMemoryServiceRepository,
   type InMemoryServiceRecord,
@@ -28,7 +32,9 @@ export function makeRecord(
     address: null,
     phone: null,
     websiteUrl: null,
+    imageKey: null,
     updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
+    createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
     isPublished: true,
     ...overrides,
     name,
@@ -37,6 +43,14 @@ export function makeRecord(
   };
 }
 
-export function testApp(records: InMemoryServiceRecord[] = []) {
-  return createApp({ serviceRepository: createInMemoryServiceRepository(records) });
+export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partial<AppOptions> = {}) {
+  return createApp({
+    serviceRepository: createInMemoryServiceRepository(records),
+    inquiryRepository: createInMemoryInquiryRepository(),
+    listingRequestRepository: createInMemoryListingRequestRepository(),
+    mailer: createLogMailer(() => {}),
+    auth: { mode: 'dev' },
+    storage: createLocalStorage({ apiBaseUrl: 'http://localhost:4000', secret: 'test-secret' }),
+    ...overrides,
+  });
 }

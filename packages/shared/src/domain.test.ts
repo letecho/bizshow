@@ -3,6 +3,13 @@ import {
   PREFECTURES,
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
+  AdminServiceInputSchema,
+  AdminServiceListQuerySchema,
+  IMAGE_KEY_PATTERN,
+  InquiryInputSchema,
+  UploadRequestSchema,
+  SlugSchema,
+  ListingRequestInputSchema,
   ServiceSearchQuerySchema,
   isSupportedLocale,
   pickText,
@@ -62,5 +69,91 @@ describe('ServiceSearchQuerySchema', () => {
     ['q over 100 chars', { q: 'a'.repeat(101) }],
   ])('rejects %s', (_label, input) => {
     expect(ServiceSearchQuerySchema.safeParse(input).success).toBe(false);
+  });
+});
+
+describe('InquiryInputSchema', () => {
+  const valid = { name: 'Nguyen', email: 'a@example.com', message: 'Hello', locale: 'vi' };
+
+  it('accepts a valid inquiry and trims fields', () => {
+    expect(InquiryInputSchema.parse({ ...valid, name: '  Nguyen ' }).name).toBe('Nguyen');
+  });
+
+  it('rejects an invalid email, unsupported locale and too long message', () => {
+    expect(InquiryInputSchema.safeParse({ ...valid, email: 'nope' }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, locale: 'fr' }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2001) }).success).toBe(false);
+    expect(InquiryInputSchema.safeParse({ ...valid, message: 'a'.repeat(2000) }).success).toBe(true);
+  });
+});
+
+describe('ListingRequestInputSchema', () => {
+  const valid = {
+    category: 'legal',
+    prefecture: 'tokyo',
+    supportedLanguages: ['ja', 'en', 'en'],
+    name: { en: 'Visa Office', ja: '', vi: 'Văn phòng visa' },
+    description: { en: 'Visa support' },
+    contactName: 'Tanaka',
+    contactEmail: 'tanaka@example.com',
+  };
+
+  it('accepts a minimal request, de-duplicates languages and drops empty translations', () => {
+    const parsed = ListingRequestInputSchema.parse(valid);
+    expect(parsed.supportedLanguages).toEqual(['ja', 'en']);
+    expect(parsed.name).toEqual({ en: 'Visa Office', vi: 'Văn phòng visa' });
+  });
+
+  it('rejects missing required fields', () => {
+    expect(ListingRequestInputSchema.safeParse({ ...valid, name: { ja: '名前のみ' } }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, supportedLanguages: [] }).success).toBe(false);
+    const { contactEmail: _omit, ...withoutEmail } = valid;
+    expect(ListingRequestInputSchema.safeParse(withoutEmail).success).toBe(false);
+  });
+
+  it('validates website URL and phone format', () => {
+    expect(ListingRequestInputSchema.safeParse({ ...valid, websiteUrl: 'javascript:alert(1)' }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, websiteUrl: 'https://example.com' }).success).toBe(true);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, phone: '03-1234-5678' }).success).toBe(true);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, phone: 'call me' }).success).toBe(false);
+  });
+});
+
+describe('admin schemas', () => {
+  it('validates slugs', () => {
+    expect(SlugSchema.safeParse('tokyo-clinic-1').success).toBe(true);
+    expect(SlugSchema.safeParse('Tokyo Clinic').success).toBe(false);
+    expect(SlugSchema.safeParse('-bad-').success).toBe(false);
+  });
+
+  it('parses the published filter from query strings', () => {
+    expect(AdminServiceListQuerySchema.parse({ published: 'false' }).published).toBe(false);
+    expect(AdminServiceListQuerySchema.parse({ published: '' }).published).toBeUndefined();
+    expect(AdminServiceListQuerySchema.safeParse({ published: 'yes' }).success).toBe(false);
+  });
+
+  it('defaults isPublished to false for new services', () => {
+    const parsed = AdminServiceInputSchema.parse({
+      slug: 'a',
+      category: 'daily',
+      prefecture: 'tokyo',
+      supportedLanguages: ['en'],
+      name: { en: 'A' },
+      description: { en: 'B' },
+    });
+    expect(parsed.isPublished).toBe(false);
+  });
+});
+
+describe('UploadRequestSchema', () => {
+  it('accepts jpeg/png/webp up to 5MB only', () => {
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/webp', size: 5 * 1024 * 1024 }).success).toBe(true);
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/gif', size: 100 }).success).toBe(false);
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/png', size: 5 * 1024 * 1024 + 1 }).success).toBe(false);
+  });
+
+  it('validates image keys', () => {
+    expect(IMAGE_KEY_PATTERN.test('listings/123e4567-e89b-12d3-a456-426614174000.jpg')).toBe(true);
+    expect(IMAGE_KEY_PATTERN.test('../etc/passwd')).toBe(false);
   });
 });

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../app';
 import { createInMemoryServiceRepository } from '../repositories/inMemoryServiceRepository';
 import { makeRecord, testApp } from './helpers/fixtures';
 
@@ -70,7 +69,7 @@ describe('GET /api/v1/services', () => {
   it('caches results for identical (normalized) queries', async () => {
     const repo = createInMemoryServiceRepository([makeRecord({ category: 'telecom', prefecture: 'aichi' })]);
     const search = vi.spyOn(repo, 'search');
-    const cachedApp = createApp({ serviceRepository: repo });
+    const cachedApp = testApp([], { serviceRepository: repo });
     const first = await request(cachedApp).get('/api/v1/services?category=telecom&prefecture=aichi');
     const second = await request(cachedApp).get('/api/v1/services?prefecture=aichi&category=telecom&q=');
     expect(second.body).toEqual(first.body);
@@ -87,8 +86,8 @@ describe('GET /api/v1/services/:slug', () => {
   it('returns the service detail for an existing slug', async () => {
     const res = await request(app).get('/api/v1/services/medical-tokyo');
     expect(res.status).toBe(200);
-    const { isPublished: _p, searchText: _s, ...expected } = records[2];
-    expect(res.body).toEqual({ data: expected });
+    const { isPublished: _p, searchText: _s, createdAt: _c, imageKey: _k, ...expected } = records[2];
+    expect(res.body).toEqual({ data: { ...expected, imageUrl: null } });
   });
 
   it('returns 404 NOT_FOUND for an unknown slug', async () => {
@@ -106,7 +105,7 @@ describe('GET /api/v1/services/:slug', () => {
   it('caches the detail response', async () => {
     const repo = createInMemoryServiceRepository([makeRecord({ slug: 'cached-detail' })]);
     const findBySlug = vi.spyOn(repo, 'findBySlug');
-    const cachedApp = createApp({ serviceRepository: repo });
+    const cachedApp = testApp([], { serviceRepository: repo });
     await request(cachedApp).get('/api/v1/services/cached-detail');
     const second = await request(cachedApp).get('/api/v1/services/cached-detail');
     expect(second.status).toBe(200);

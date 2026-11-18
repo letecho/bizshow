@@ -128,6 +128,153 @@ export interface ServiceDetail extends ServiceSummary {
   address: LocalizedText | null;
   phone: string | null;
   websiteUrl: string | null;
+  /** 掲載画像（CDN 経由の URL）。未設定は null */
+  imageUrl: string | null;
   /** ISO 8601 */
+  updatedAt: string;
+}
+
+// ---- Inquiry ----------------------------------------------------------------
+
+export const INQUIRY_MESSAGE_MAX = 2000;
+
+/** POST /api/v1/inquiries の入力。website はボット検出用のハニーポット（人は空のまま送る） */
+export const InquiryInputSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().max(254).pipe(z.email()),
+  message: z.string().trim().min(1).max(INQUIRY_MESSAGE_MAX),
+  locale: z.enum(SUPPORTED_LOCALES),
+  website: z.string().max(500).optional(),
+});
+export type InquiryInput = z.infer<typeof InquiryInputSchema>;
+
+// ---- Listing input (掲載申請・管理画面で共通) -------------------------------
+
+const optionalText = (max: number) => z.preprocess(emptyToUndefined, z.string().trim().max(max).optional());
+
+/** LocalizedText の入力。en 必須、他言語は任意（空欄は未入力扱い） */
+export const localizedTextInput = (max: number) =>
+  z.object({
+    en: z.string().trim().min(1).max(max),
+    ja: optionalText(max),
+    zh: optionalText(max),
+    vi: optionalText(max),
+  });
+
+/** 掲載内容（ServiceListing 相当の入力項目。slug・公開状態は含まない） */
+export const ListingFieldsSchema = z.object({
+  category: z.enum(SERVICE_CATEGORIES),
+  prefecture: z.enum(PREFECTURE_CODES),
+  city: optionalText(100),
+  supportedLanguages: z
+    .array(z.enum(SUPPORTED_LOCALES))
+    .min(1)
+    .transform((langs) => [...new Set(langs)]),
+  name: localizedTextInput(200),
+  description: localizedTextInput(5000),
+  address: localizedTextInput(300).optional(),
+  phone: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9()\- ]{6,20}$/)
+      .optional(),
+  ),
+  websiteUrl: z.preprocess(emptyToUndefined, z.url({ protocol: /^https?$/ }).max(500).optional()),
+});
+export type ListingFields = z.infer<typeof ListingFieldsSchema>;
+
+export const LISTING_REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export type ListingRequestStatus = (typeof LISTING_REQUEST_STATUSES)[number];
+
+/** POST /api/v1/listing-requests の入力（掲載内容＋担当者） */
+export const ListingRequestInputSchema = ListingFieldsSchema.extend({
+  contactName: z.string().trim().min(1).max(100),
+  contactEmail: z.string().trim().max(254).pipe(z.email()),
+});
+export type ListingRequestInput = z.infer<typeof ListingRequestInputSchema>;
+
+// ---- Admin (F-106) -----------------------------------------------------------
+
+// ---- Image upload (F-107) ----------------------------------------------------
+
+export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
+export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+/** アップロード先のキー（listings/<uuid>.<ext>） */
+export const IMAGE_KEY_PATTERN = /^listings\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
+
+/** POST /api/v1/admin/uploads の入力 */
+export const UploadRequestSchema = z.object({
+  contentType: z.enum(IMAGE_CONTENT_TYPES),
+  /** バイト数（presigned URL に署名され、異なるサイズの PUT は拒否される） */
+  size: z.number().int().min(1).max(IMAGE_MAX_BYTES),
+});
+export type UploadRequest = z.infer<typeof UploadRequestSchema>;
+
+/** POST /api/v1/admin/uploads の結果。uploadUrl へ headers を付けて PUT する */
+export interface UploadTicket {
+  key: string;
+  uploadUrl: string;
+  headers: Record<string, string>;
+  publicUrl: string;
+}
+
+/** URL 用 slug: 英小文字・数字をハイフンで区切る */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const SlugSchema = z.string().trim().min(1).max(100).regex(SLUG_PATTERN);
+
+/** 管理画面での掲載作成・更新（PUT は全項目置き換え） */
+export const AdminServiceInputSchema = ListingFieldsSchema.extend({
+  slug: SlugSchema,
+  isPublished: z.boolean().default(false),
+  /** POST /api/v1/admin/uploads で発行したキー */
+  imageKey: z.preprocess(emptyToUndefined, z.string().regex(IMAGE_KEY_PATTERN).optional()),
+});
+export type AdminServiceInput = z.infer<typeof AdminServiceInputSchema>;
+
+const booleanQuery = z.preprocess(emptyToUndefined, z.enum(['true', 'false']).transform((v) => v === 'true').optional());
+const pageQuery = z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).default(1));
+const limitQuery = z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(100).default(50));
+
+export const AdminServiceListQuerySchema = z.object({
+  q: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
+  /** true = 公開のみ / false = 非公開のみ / 未指定 = すべて */
+  published: booleanQuery,
+  page: pageQuery,
+  limit: limitQuery,
+});
+export type AdminServiceListQuery = z.infer<typeof AdminServiceListQuerySchema>;
+
+export const ListingRequestListQuerySchema = z.object({
+  status: z.preprocess(emptyToUndefined, z.enum(LISTING_REQUEST_STATUSES).optional()),
+  page: pageQuery,
+  limit: limitQuery,
+});
+export type ListingRequestListQuery = z.infer<typeof ListingRequestListQuerySchema>;
+
+export const PublishInputSchema = z.object({ isPublished: z.boolean() });
+
+/** 申請承認時に管理者が決める項目 */
+export const ApproveListingRequestSchema = z.object({
+  slug: SlugSchema,
+  isPublished: z.boolean().default(false),
+});
+
+/** 管理画面用の掲載（非公開も含む） */
+export interface AdminService extends ServiceDetail {
+  isPublished: boolean;
+  imageKey: string | null;
+  /** ISO 8601 */
+  createdAt: string;
+}
+
+/** 管理画面用の掲載申請 */
+export interface ListingRequest extends ListingRequestInput {
+  id: string;
+  status: ListingRequestStatus;
+  /** ISO 8601 */
+  createdAt: string;
   updatedAt: string;
 }

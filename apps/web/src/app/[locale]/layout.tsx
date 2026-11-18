@@ -4,6 +4,7 @@ import { isSupportedLocale } from '@fss/shared/domain';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { getDictionary } from '../../i18n/dictionaries';
 import { locales } from '../../i18n/config';
+import { LEGAL_PAGES } from '../../lib/legal';
 import styles from './layout.module.css';
 
 // 対応言語以外（/fr など）は 404
@@ -37,6 +38,17 @@ export default async function LocaleLayout({ children, params }: Props & { child
           <LanguageSwitcher current={locale} label={dict.header.language} />
         </header>
         {children}
+        <footer className={styles.footer}>
+          <nav aria-label="legal" className={styles.footerNav}>
+            {LEGAL_PAGES.map((page) => (
+              <a key={page} href={`/${locale}/legal/${page}`}>
+                {dict.legal[page]}
+              </a>
+            ))}
+            <a href={`/${locale}/contact`}>{dict.footer.contact}</a>
+            <a href={`/${locale}/apply`}>{dict.footer.apply}</a>
+          </nav>
+        </footer>
       </body>
     </html>
   );
