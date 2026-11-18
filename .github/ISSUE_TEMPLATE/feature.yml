@@ -1,0 +1,53 @@
+name: 機能（AI実装用）
+description: 機能一覧シートの1行 = 1 Issue。仕様が埋まったら ai-ready ラベルを付ける
+title: "[F-XXX] "
+labels: ["type:feature", "needs-spec"]
+body:
+  - type: input
+    id: feature_id
+    attributes:
+      label: 機能ID
+      description: 機能一覧シートのID（例 F-001）
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: フェーズ
+      options: [POC, MVP, Later]
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 目的（ユーザー価値）
+      placeholder: 誰が・何をできるようになるか
+    validations:
+      required: true
+  - type: textarea
+    id: spec
+    attributes:
+      label: 仕様（実装指示）
+      description: API（メソッド/パス/入出力）、画面（URL/要素）、データ（モデル/項目）を箇条書きで
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受入条件
+      description: テストで検証可能な形で（Given/When/Then 推奨）
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: 対象ファイル・パス
+  - type: input
+    id: depends
+    attributes:
+      label: 依存Issue
+      placeholder: "#12, #13"
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: スコープ外

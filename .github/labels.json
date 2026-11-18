@@ -1,0 +1,18 @@
+[
+  { "name": "ai-ready", "color": "0e8a16", "description": "仕様確定。AIが実装に着手してよい" },
+  { "name": "ai-in-progress", "color": "fbca04", "description": "AIが実装中（PR作成済みまたは作業中）" },
+  { "name": "needs-spec", "color": "d93f0b", "description": "仕様不足。人の判断・追記が必要" },
+  { "name": "blocked", "color": "b60205", "description": "依存Issue未完了または外部要因で停止" },
+  { "name": "phase:poc", "color": "5319e7", "description": "POCで必須" },
+  { "name": "phase:mvp", "color": "1d76db", "description": "MVP（一般公開）で必須" },
+  { "name": "phase:later", "color": "c5def5", "description": "将来対応" },
+  { "name": "type:feature", "color": "a2eeef", "description": "機能追加" },
+  { "name": "type:bug", "color": "d73a4a", "description": "不具合" },
+  { "name": "type:infra", "color": "bfd4f2", "description": "CI/CD・IaC・開発基盤" },
+  { "name": "type:chore", "color": "ededed", "description": "雑務・リファクタ・依存更新" },
+  { "name": "area:web", "color": "f9d0c4", "description": "apps/web" },
+  { "name": "area:api", "color": "fef2c0", "description": "apps/api" },
+  { "name": "area:shared", "color": "e6e6e6", "description": "packages/shared" },
+  { "name": "area:infra", "color": "c2e0c6", "description": "infra/ .github/" },
+  { "name": "dependencies", "color": "0366d6", "description": "依存パッケージ更新" }
+]

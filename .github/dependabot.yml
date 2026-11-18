@@ -4,8 +4,25 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    groups:
+      # minor/patch はまとめて1PRに（CI通過後にマージ）
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # メジャー更新は破壊的変更があるため自動PRを止め、Issue化して計画的に対応
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    labels: ["dependencies"]
+    groups:
+      actions:
+        patterns: ["*"]
