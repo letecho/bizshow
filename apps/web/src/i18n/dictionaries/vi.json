@@ -43,5 +43,10 @@
     "languages": "Ngôn ngữ hỗ trợ",
     "back": "Quay lại tìm kiếm",
     "error": "Không thể tải dịch vụ này. Vui lòng thử lại sau."
+  },
+  "legal": {
+    "terms": "Điều khoản sử dụng",
+    "privacy": "Chính sách bảo mật",
+    "tokushoho": "Thông tin theo Luật Giao dịch Thương mại Đặc định"
   }
 }
