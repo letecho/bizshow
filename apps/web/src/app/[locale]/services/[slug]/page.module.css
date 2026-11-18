@@ -1,0 +1,79 @@
+.main {
+  max-width: 880px;
+  margin: 24px auto;
+  padding: 0 20px;
+}
+
+.back {
+  color: #0f766e;
+}
+
+.card,
+.error {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.error {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.name {
+  font-size: 24px;
+  margin-top: 0;
+}
+
+.description {
+  color: #334155;
+  line-height: 1.7;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 16px 0 0;
+}
+
+.list dt {
+  color: #64748b;
+}
+
+.list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.list a {
+  color: #0f766e;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.badge {
+  background: #ccfbf1;
+  color: #0f766e;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+
+  .list dd {
+    margin-bottom: 8px;
+  }
+}
