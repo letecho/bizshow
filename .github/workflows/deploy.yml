@@ -1,19 +1,31 @@
 name: CD (ECS Fargate Deploy)
 
+# AWS基盤構築前は Repository variables の DEPLOY_ENABLED を未設定にしておけばスキップされる。
+# 有効化: Settings > Secrets and variables > Actions > Variables に DEPLOY_ENABLED=true、
+#         Secrets に AWS_OIDC_ROLE_ARN を登録。production Environment に Required reviewers を設定。
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 env:
   AWS_REGION: ap-northeast-1
+  PROJECT: fss
 
 jobs:
   build-and-push:
+    if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -26,10 +38,10 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -f apps/web/Dockerfile -t $REGISTRY/fss-web:${{ github.sha }} .
-          docker push $REGISTRY/fss-web:${{ github.sha }}
-          docker build -f apps/api/Dockerfile -t $REGISTRY/fss-api:${{ github.sha }} .
-          docker push $REGISTRY/fss-api:${{ github.sha }}
+          for app in web api; do
+            docker build -f apps/$app/Dockerfile -t $REGISTRY/$PROJECT-$app:${{ github.sha }} .
+            docker push $REGISTRY/$PROJECT-$app:${{ github.sha }}
+          done
 
   deploy-stg:
     needs: build-and-push
@@ -40,14 +52,16 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      # TODO(D-005): タスク定義のイメージタグ更新 + prisma migrate deploy の one-off タスク実行
       - name: Deploy to staging ECS
         run: |
-          aws ecs update-service --cluster fss-stg --service api --force-new-deployment
-          aws ecs update-service --cluster fss-stg --service web --force-new-deployment
+          aws ecs update-service --cluster $PROJECT-stg --service api --force-new-deployment
+          aws ecs update-service --cluster $PROJECT-stg --service web --force-new-deployment
+          aws ecs wait services-stable --cluster $PROJECT-stg --services api web
 
   deploy-prod:
     needs: deploy-stg
-    environment: production
+    environment: production # Required reviewers で手動承認
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
@@ -56,5 +70,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy to production ECS
         run: |
-          aws ecs update-service --cluster fss-prod --service api --force-new-deployment
-          aws ecs update-service --cluster fss-prod --service web --force-new-deployment
+          aws ecs update-service --cluster $PROJECT-prod --service api --force-new-deployment
+          aws ecs update-service --cluster $PROJECT-prod --service web --force-new-deployment
+          aws ecs wait services-stable --cluster $PROJECT-prod --services api web

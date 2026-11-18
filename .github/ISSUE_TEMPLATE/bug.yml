@@ -1,0 +1,27 @@
+name: 不具合
+description: バグ報告
+title: "[BUG] "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 事象
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 環境（local / stg / prod、ブラウザ等）

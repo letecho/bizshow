@@ -1,0 +1,44 @@
+name: Lockfile Sync
+
+# AI/MCP経由のコミットでは pnpm-lock.yaml を更新できないため、
+# package.json が変わったブランチで lockfile を自動再生成してコミットし、CI を再実行する。
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - '**/package.json'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]' && !startsWith(github.ref_name, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Commit lockfile & re-run CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain pnpm-lock.yaml)" ]; then
+            echo "lockfile is up to date"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore(deps): sync pnpm-lock.yaml"
+          git push origin HEAD:${{ github.ref_name }}
+          # GITHUB_TOKEN のpushでは pull_request イベントが発火しないため明示的にCIを起動
+          gh workflow run ci.yml --ref "${{ github.ref_name }}"

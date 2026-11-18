@@ -29,3 +29,8 @@ pnpm dev
 
 ## 将来拡張スイッチの使い方 (`infra/terraform/envs/prod/terraform.tfvars`)
 初期は月額約8,745円（税込）の最小構成でスタートし、サービス成長時に `terraform.tfvars` のフラグを `true` に切り替えて `terraform apply` するだけで無停止スケールアップが可能です。
+
+## 開発フロー
+- CI相当のローカル検証: `pnpm verify`
+- Issue → `ai-ready` → AI実装PR → CI → Squash merge の流れは [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- AIエージェント向け規約は [CLAUDE.md](CLAUDE.md)
