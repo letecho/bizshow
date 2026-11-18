@@ -13,7 +13,9 @@ import type { ServiceAdminRepository, ServiceRepository } from './repositories/s
 import { adminRouter } from './routes/admin';
 import { inquiriesRouter } from './routes/inquiries';
 import { listingRequestsRouter } from './routes/listingRequests';
+import { localUploadsRouter } from './routes/localUploads';
 import { servicesRouter } from './routes/services';
+import type { LocalStorage, Storage } from './storage/storage';
 
 export interface AppOptions {
   serviceRepository: ServiceRepository & ServiceAdminRepository;
@@ -22,6 +24,10 @@ export interface AppOptions {
   mailer: Mailer;
   /** 管理 API の認証（AUTH_MODE=dev | cognito） */
   auth: AuthOptions;
+  /** 画像アップロード先の発行（STORAGE_DRIVER=local | s3） */
+  storage: Storage;
+  /** STORAGE_DRIVER=local のときのアップロード受付・配信 */
+  localUploads?: { storage: LocalStorage; dir: string };
   /** お問い合わせの運営通知先（既定: env MAIL_OPERATOR_TO） */
   operatorEmail?: string;
   /** 全体レート制限（既定 120 req/分/IP） */
@@ -63,6 +69,10 @@ export function createApp(options: AppOptions) {
     });
   });
 
+  if (options.localUploads) {
+    app.use(localUploadsRouter(options.localUploads.storage, options.localUploads.dir));
+  }
+
   app.use('/api/v1/services', servicesRouter(options.serviceRepository));
   app.use(
     '/api/v1/inquiries',
@@ -81,6 +91,7 @@ export function createApp(options: AppOptions) {
       requireAdmin: requireAdmin(options.auth),
       services: options.serviceRepository,
       listingRequests: options.listingRequestRepository,
+      storage: options.storage,
     }),
   );
 

@@ -10,6 +10,7 @@ import type {
   SupportedLocale,
 } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
+import { imageUrlFor } from '../storage/storage';
 import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
 
 export function toServiceSummary(row: ServiceListing): ServiceSummary {
@@ -31,12 +32,18 @@ export function toServiceDetail(row: ServiceListing): ServiceDetail {
     address: row.address as LocalizedText | null,
     phone: row.phone,
     websiteUrl: row.websiteUrl,
+    imageUrl: imageUrlFor(row.imageKey),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
 export function toAdminService(row: ServiceListing): AdminService {
-  return { ...toServiceDetail(row), isPublished: row.isPublished, createdAt: row.createdAt.toISOString() };
+  return {
+    ...toServiceDetail(row),
+    isPublished: row.isPublished,
+    imageKey: row.imageKey,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 /** PUT は全項目置き換えのため、未入力の任意項目は null にする */
@@ -47,6 +54,7 @@ function toData(input: AdminServiceInput) {
     address: input.address ?? Prisma.DbNull,
     phone: input.phone ?? null,
     websiteUrl: input.websiteUrl ?? null,
+    imageKey: input.imageKey ?? null,
     searchText: buildSearchText(input.name, input.description),
   };
 }

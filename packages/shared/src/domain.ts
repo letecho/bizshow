@@ -128,6 +128,8 @@ export interface ServiceDetail extends ServiceSummary {
   address: LocalizedText | null;
   phone: string | null;
   websiteUrl: string | null;
+  /** 掲載画像（CDN 経由の URL）。未設定は null */
+  imageUrl: string | null;
   /** ISO 8601 */
   updatedAt: string;
 }
@@ -195,6 +197,30 @@ export type ListingRequestInput = z.infer<typeof ListingRequestInputSchema>;
 
 // ---- Admin (F-106) -----------------------------------------------------------
 
+// ---- Image upload (F-107) ----------------------------------------------------
+
+export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
+export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+/** アップロード先のキー（listings/<uuid>.<ext>） */
+export const IMAGE_KEY_PATTERN = /^listings\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
+
+/** POST /api/v1/admin/uploads の入力 */
+export const UploadRequestSchema = z.object({
+  contentType: z.enum(IMAGE_CONTENT_TYPES),
+  /** バイト数（presigned URL に署名され、異なるサイズの PUT は拒否される） */
+  size: z.number().int().min(1).max(IMAGE_MAX_BYTES),
+});
+export type UploadRequest = z.infer<typeof UploadRequestSchema>;
+
+/** POST /api/v1/admin/uploads の結果。uploadUrl へ headers を付けて PUT する */
+export interface UploadTicket {
+  key: string;
+  uploadUrl: string;
+  headers: Record<string, string>;
+  publicUrl: string;
+}
+
 /** URL 用 slug: 英小文字・数字をハイフンで区切る */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SlugSchema = z.string().trim().min(1).max(100).regex(SLUG_PATTERN);
@@ -203,6 +229,8 @@ export const SlugSchema = z.string().trim().min(1).max(100).regex(SLUG_PATTERN);
 export const AdminServiceInputSchema = ListingFieldsSchema.extend({
   slug: SlugSchema,
   isPublished: z.boolean().default(false),
+  /** POST /api/v1/admin/uploads で発行したキー */
+  imageKey: z.preprocess(emptyToUndefined, z.string().regex(IMAGE_KEY_PATTERN).optional()),
 });
 export type AdminServiceInput = z.infer<typeof AdminServiceInputSchema>;
 
@@ -237,6 +265,7 @@ export const ApproveListingRequestSchema = z.object({
 /** 管理画面用の掲載（非公開も含む） */
 export interface AdminService extends ServiceDetail {
   isPublished: boolean;
+  imageKey: string | null;
   /** ISO 8601 */
   createdAt: string;
 }

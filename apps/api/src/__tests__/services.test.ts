@@ -86,8 +86,8 @@ describe('GET /api/v1/services/:slug', () => {
   it('returns the service detail for an existing slug', async () => {
     const res = await request(app).get('/api/v1/services/medical-tokyo');
     expect(res.status).toBe(200);
-    const { isPublished: _p, searchText: _s, createdAt: _c, ...expected } = records[2];
-    expect(res.body).toEqual({ data: expected });
+    const { isPublished: _p, searchText: _s, createdAt: _c, imageKey: _k, ...expected } = records[2];
+    expect(res.body).toEqual({ data: { ...expected, imageUrl: null } });
   });
 
   it('returns 404 NOT_FOUND for an unknown slug', async () => {

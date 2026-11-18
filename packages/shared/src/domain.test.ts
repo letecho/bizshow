@@ -5,7 +5,9 @@ import {
   SUPPORTED_LOCALES,
   AdminServiceInputSchema,
   AdminServiceListQuerySchema,
+  IMAGE_KEY_PATTERN,
   InquiryInputSchema,
+  UploadRequestSchema,
   SlugSchema,
   ListingRequestInputSchema,
   ServiceSearchQuerySchema,
@@ -140,5 +142,18 @@ describe('admin schemas', () => {
       description: { en: 'B' },
     });
     expect(parsed.isPublished).toBe(false);
+  });
+});
+
+describe('UploadRequestSchema', () => {
+  it('accepts jpeg/png/webp up to 5MB only', () => {
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/webp', size: 5 * 1024 * 1024 }).success).toBe(true);
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/gif', size: 100 }).success).toBe(false);
+    expect(UploadRequestSchema.safeParse({ contentType: 'image/png', size: 5 * 1024 * 1024 + 1 }).success).toBe(false);
+  });
+
+  it('validates image keys', () => {
+    expect(IMAGE_KEY_PATTERN.test('listings/123e4567-e89b-12d3-a456-426614174000.jpg')).toBe(true);
+    expect(IMAGE_KEY_PATTERN.test('../etc/passwd')).toBe(false);
   });
 });

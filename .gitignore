@@ -14,3 +14,7 @@ test-results/
 .DS_Store
 next-env.d.ts
 *.tsbuildinfo
+
+# ローカル画像アップロード（STORAGE_DRIVER=local）
+uploads/
+apps/api/uploads/

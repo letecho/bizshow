@@ -3,19 +3,23 @@ export interface SecurityHeadersOptions {
   apiUrl: string;
   /** next dev では HMR のため eval / websocket を許可する */
   isDev: boolean;
+  /** 管理画面から画像を直接 PUT する先（S3 の presigned URL のオリジン。env UPLOAD_ORIGIN） */
+  uploadOrigin?: string;
 }
 
 /** next.config の headers() で全ページに付与するセキュリティヘッダ */
-export function securityHeaders({ apiUrl, isDev }: SecurityHeadersOptions): { key: string; value: string }[] {
+export function securityHeaders({ apiUrl, isDev, uploadOrigin }: SecurityHeadersOptions): { key: string; value: string }[] {
   const apiOrigin = new URL(apiUrl).origin;
+  const uploads = uploadOrigin ? ` ${new URL(uploadOrigin).origin}` : '';
   const csp = [
     "default-src 'self'",
     // App Router はインラインスクリプトを出力するため 'unsafe-inline' が必要（nonce 化は将来課題）
     `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
+    // 掲載画像: 本番は CDN（https）、ローカル（STORAGE_DRIVER=local）は API の /uploads
+    `img-src 'self' data: https: ${apiOrigin}`,
     "font-src 'self'",
-    `connect-src 'self' ${apiOrigin}${isDev ? ' ws:' : ''}`,
+    `connect-src 'self' ${apiOrigin}${uploads}${isDev ? ' ws:' : ''}`,
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'none'",

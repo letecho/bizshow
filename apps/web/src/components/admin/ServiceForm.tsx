@@ -6,6 +6,7 @@ import type { FormState } from '../../app/admin/actions';
 import { localeNames, locales } from '../../i18n/config';
 import en from '../../i18n/dictionaries/en.json';
 import formStyles from '../Form.module.css';
+import { ImageField } from './ImageField';
 import styles from '../../app/admin/admin.module.css';
 
 /** 掲載の作成・編集フォーム。名前・説明・住所は言語タブで切替（en 必須）。全タブの入力が送信される */
@@ -120,6 +121,8 @@ export function ServiceForm({
           </label>
         </div>
       ))}
+
+      <ImageField initialKey={service?.imageKey} initialUrl={service?.imageUrl} />
 
       <label>
         <input type="checkbox" name="isPublished" defaultChecked={service?.isPublished ?? false} /> 公開する

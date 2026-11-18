@@ -30,4 +30,17 @@ describe('securityHeaders', () => {
     expect(csp).toContain("'unsafe-eval'");
     expect(csp).toContain('ws:');
   });
+
+  it('allows images from the API origin and PUTs to the upload origin', () => {
+    const csp = get(
+      securityHeaders({
+        apiUrl: 'http://localhost:4000',
+        isDev: false,
+        uploadOrigin: 'https://bizshow-assets.s3.ap-northeast-1.amazonaws.com/listings',
+      }),
+      'Content-Security-Policy',
+    )!;
+    expect(csp).toContain("img-src 'self' data: https: http://localhost:4000;");
+    expect(csp).toContain("connect-src 'self' http://localhost:4000 https://bizshow-assets.s3.ap-northeast-1.amazonaws.com;");
+  });
 });

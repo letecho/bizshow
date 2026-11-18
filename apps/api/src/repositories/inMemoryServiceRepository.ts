@@ -1,14 +1,16 @@
 import type { AdminService, AdminServiceInput } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
+import { imageUrlFor } from '../storage/storage';
 import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
 
-export interface InMemoryServiceRecord extends AdminService {
+/** imageUrl は imageKey から導出するため保持しない */
+export interface InMemoryServiceRecord extends Omit<AdminService, 'imageUrl'> {
   /** 全言語の name + description を小文字連結したもの */
   searchText: string;
 }
 
 function toAdminService({ searchText: _searchText, ...service }: InMemoryServiceRecord): AdminService {
-  return service;
+  return { ...service, imageUrl: imageUrlFor(service.imageKey) };
 }
 
 function fromInput(input: AdminServiceInput) {
@@ -18,6 +20,7 @@ function fromInput(input: AdminServiceInput) {
     address: input.address ?? null,
     phone: input.phone ?? null,
     websiteUrl: input.websiteUrl ?? null,
+    imageKey: input.imageKey ?? null,
     searchText: buildSearchText(input.name, input.description),
   };
 }
@@ -65,7 +68,7 @@ export function createInMemoryServiceRepository(
     async findBySlug(slug) {
       const record = records.find((r) => r.slug === slug && r.isPublished);
       if (!record) return null;
-      const { isPublished: _isPublished, createdAt: _createdAt, ...detail } = toAdminService(record);
+      const { isPublished: _isPublished, createdAt: _createdAt, imageKey: _imageKey, ...detail } = toAdminService(record);
       return detail;
     },
 

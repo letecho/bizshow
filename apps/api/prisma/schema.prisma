@@ -25,6 +25,8 @@ model ServiceListing {
   address            Json?
   phone              String?
   websiteUrl         String?
+  /// 掲載画像のストレージキー（F-107）。配信は CDN 経由
+  imageKey           String?
   /// 全言語の name + description を小文字で連結した検索用テキスト
   searchText         String
   isPublished        Boolean  @default(true)
