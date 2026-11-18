@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { AdminServiceInputSchema, ApproveListingRequestSchema } from '@fss/shared/domain';
+import {
+  AdminServiceInputSchema,
+  ApproveListingRequestSchema,
+  UploadRequestSchema,
+  type UploadTicket,
+} from '@fss/shared/domain';
 import { adminFetch } from '../../lib/adminApi';
 import { listingFormToInput } from '../../lib/listingForm';
 
@@ -23,6 +28,7 @@ function serviceInput(form: FormData) {
     ...listingFormToInput(form),
     slug: String(form.get('slug') ?? ''),
     isPublished: form.get('isPublished') === 'on',
+    imageKey: String(form.get('imageKey') ?? ''),
   });
 }
 
@@ -82,4 +88,16 @@ export async function rejectRequest(id: string): Promise<void> {
   const res = await adminFetch(`/listing-requests/${encodeURIComponent(id)}/reject`, { method: 'POST' });
   if (!res.ok) throw new Error(await errorMessage(res));
   revalidatePath('/admin/listing-requests');
+}
+
+/** 画像アップロード先（presigned PUT URL）を発行する。ファイル本体はブラウザから直接 PUT する */
+export async function createUploadTicket(
+  contentType: string,
+  size: number,
+): Promise<{ ticket: UploadTicket } | { error: string }> {
+  const parsed = UploadRequestSchema.safeParse({ contentType, size });
+  if (!parsed.success) return { error: 'JPEG / PNG / WebP の 5MB 以下の画像を選択してください。' };
+  const res = await adminFetch('/uploads', { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (!res.ok) return { error: await errorMessage(res) };
+  return { ticket: ((await res.json()) as { data: UploadTicket }).data };
 }

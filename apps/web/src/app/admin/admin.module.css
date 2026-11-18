@@ -168,3 +168,10 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+.preview {
+  max-width: 240px;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+}
