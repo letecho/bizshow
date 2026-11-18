@@ -43,5 +43,10 @@
     "languages": "Supported languages",
     "back": "Back to search",
     "error": "Could not load this service. Please try again later."
+  },
+  "legal": {
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "tokushoho": "Commercial Disclosure (Specified Commercial Transactions Act)"
   }
 }
