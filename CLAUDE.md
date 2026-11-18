@@ -16,4 +16,4 @@
 5. 新しい依存追加は最小限。lockfile は `lockfile-sync` が自動更新するので package.json だけ変更すればよい
 6. 完了前に `pnpm verify` 相当（lint / typecheck / test / build）が通ること。API変更にはテストを付ける
 7. 秘密情報をコミットしない。環境変数は `.env.example` に追記
-8. 詳細フローは `docs/DEVELOPMENT.md`
+8. 詳細フローは `docs/DEVELOPMENT.md`、定期実行（自立 CI/CD）の手順は `docs/AI_RUNBOOK.md`

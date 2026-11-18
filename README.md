@@ -53,4 +53,4 @@ postgres → マイグレーション＋シード → API → Web の順に起�
 ## 開発フロー
 - CI相当のローカル検証: `pnpm verify`
 - Issue → `ai-ready` → AI実装PR → CI → Squash merge の流れは [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
-- AIエージェント向け規約は [CLAUDE.md](CLAUDE.md)
+- AIエージェント向け規約は [CLAUDE.md](CLAUDE.md)、定期実行の手順書は [docs/AI_RUNBOOK.md](docs/AI_RUNBOOK.md)
