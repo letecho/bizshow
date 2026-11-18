@@ -22,7 +22,7 @@ cp .env.example .env
 # 3. ローカル DB (PostgreSQL) 起動
 docker compose up -d postgres
 
-# 4. マイグレーション適用 & シードデータ投入（24 件。何度実行しても同じ結果）
+# 4. Prisma Client 生成・マイグレーション適用 & シードデータ投入（24 件。何度実行しても同じ結果）
 pnpm db:migrate
 pnpm db:seed
 
