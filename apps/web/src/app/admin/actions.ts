@@ -132,19 +132,24 @@ export async function deleteBlockEntry(id: string): Promise<void> {
 /** 掲載候補の承認（F-113）。管理者が確認・編集した値で掲載を作成（update 候補は既存を更新）する */
 export async function approveCandidate(id: string, _prev: FormState, form: FormData): Promise<FormState> {
   const entityType = String(form.get('entityType') ?? '');
+  const consentEvidence = form.get('consentEvidence');
   const parsed = ApproveCandidateSchema.safeParse({
     ...listingFormToInput(form),
     slug: String(form.get('slug') ?? ''),
     isPublished: form.get('isPublished') === 'on',
     imageKey: String(form.get('imageKey') ?? ''),
     ...(entityType && { entityOverride: { entityType, evidence: String(form.get('entityEvidence') ?? '') } }),
+    ...(consentEvidence !== null && { consent: { evidence: String(consentEvidence) } }),
   });
   if (!parsed.success) {
+    const field = parsed.error.issues.find((i) => i.path[0] === 'entityOverride' || i.path[0] === 'consent')?.path[0];
     return {
       error:
-        parsed.error.issues.some((i) => i.path[0] === 'entityOverride')
+        field === 'entityOverride'
           ? '事業者の種類を変更する場合は、確認した根拠（法人番号など）を入力してください。'
-          : INVALID,
+          : field === 'consent'
+            ? '掲載への本人の同意の記録（掲載申請・掲載案内への承諾など）を入力してください。'
+            : INVALID,
     };
   }
   const res = await adminFetch(`/candidates/${encodeURIComponent(id)}/approve`, { method: 'POST', body: JSON.stringify(parsed.data) });

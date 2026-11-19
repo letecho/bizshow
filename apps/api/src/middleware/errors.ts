@@ -9,6 +9,8 @@ export type ErrorCode =
   | 'CONFLICT'
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR'
+  // 個人事業主の候補を本人の同意の記録なしに承認しようとした（F-119）
+  | 'CONSENT_REQUIRED'
   // LLM（F-117）: 無効・月額の上限到達・プロバイダの障害・出力が検証に通らない
   | 'LLM_DISABLED'
   | 'LLM_BUDGET_EXCEEDED'

@@ -1,6 +1,6 @@
 # About our crawler
 
-> This page is a draft and must be reviewed by the operator and a legal professional before publication (final wording will be applied in F-119).
+> This page is a draft and must be reviewed by the operator and a legal professional before publication. It reflects the draft wording prepared with the 2026-11-19 revision of the privacy policy.
 
 To help foreign residents in Japan find services available in their language, "Multilingual Service Finder in Japan" (the Service) runs a program (crawler) that checks the supported languages and contact details on websites published by businesses.
 

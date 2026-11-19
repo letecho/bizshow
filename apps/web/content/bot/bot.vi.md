@@ -1,6 +1,6 @@
 # Về trình thu thập dữ liệu của chúng tôi
 
-> Trang này là bản nháp và cần được đơn vị vận hành cùng chuyên gia xem xét trước khi công bố (nội dung chính thức sẽ được cập nhật trong F-119).
+> Trang này là bản nháp và cần được đơn vị vận hành cùng chuyên gia xem xét trước khi công bố (nội dung được cập nhật cùng với lần sửa đổi chính sách quyền riêng tư ngày 2026-11-19).
 
 Để giúp người nước ngoài tại Nhật tìm được dịch vụ có thể sử dụng bằng ngôn ngữ của mình, dịch vụ "Tìm kiếm dịch vụ cho người nước ngoài tại Nhật" vận hành một chương trình (trình thu thập dữ liệu) kiểm tra ngôn ngữ hỗ trợ và thông tin liên hệ trên các trang web do doanh nghiệp công khai.
 

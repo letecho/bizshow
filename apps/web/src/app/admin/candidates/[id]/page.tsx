@@ -242,6 +242,25 @@ export default async function CandidateDetailPage({ params }: Props) {
                   action={draftCandidateDescription.bind(null, c.id)}
                 />
               )}
+              {c.consentRequired && (
+                <fieldset className={formStyles.fieldset}>
+                  <legend>本人の同意の記録（必須）</legend>
+                  <p role="note">
+                    この候補は「{ENTITY_TYPE_LABELS[c.entityType]}
+                    」と判定されたため、個人事業主の可能性があります。個人に関する情報は本人の同意を得た場合に限り掲載します（プライバシーポリシー
+                    3 条）。同意を確認できた記録（掲載申請・掲載案内への承諾の日付や番号など）を入力してください。
+                  </p>
+                  <label className={formStyles.field}>
+                    <span>同意の記録</span>
+                    <input
+                      name="consentEvidence"
+                      required
+                      maxLength={200}
+                      autoComplete="off"
+                    />
+                  </label>
+                </fieldset>
+              )}
               {!c.entityApprovable && (
                 <fieldset className={formStyles.fieldset}>
                   <legend>事業者の種類の確認（必須）</legend>

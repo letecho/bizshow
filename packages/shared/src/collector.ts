@@ -33,8 +33,8 @@ export const ENTITY_TYPES = ['corporation', 'public', 'individual', 'unknown'] a
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 /** 事業者の種類の判定根拠 */
-/** admin_review: 承認時に管理者が種類を変更した根拠（F-113） */
-export const ENTITY_EVIDENCE_KINDS = ['source_field', 'corporate_number', 'name_suffix', 'public_list', 'admin_review'] as const;
+/** admin_review: 承認時に管理者が種類を変更した根拠（F-113）、consent: 個人事業主の掲載への本人の同意の記録（F-119） */
+export const ENTITY_EVIDENCE_KINDS = ['source_field', 'corporate_number', 'name_suffix', 'public_list', 'admin_review', 'consent'] as const;
 export type EntityEvidenceKind = (typeof ENTITY_EVIDENCE_KINDS)[number];
 
 /** 収集する事業者の種類（COLLECTOR_ENTITY_SCOPE） */
@@ -351,6 +351,15 @@ export function isEntityInScope(type: EntityType, scope: EntityScope): boolean {
   return type === 'corporation' || type === 'public';
 }
 
+/**
+ * 公開に本人の同意の記録が必要か（F-119、法務確認メモ 2.1 案 A）。
+ * COLLECTOR_ENTITY_SCOPE=all で個人事業主・判定できない（個人事業主の可能性がある）候補は、同意の記録が無ければ承認しない。
+ * corporate_public / corporate ではこれらは範囲外のため、法人・公的機関と確認した根拠（entityOverride）が無ければ承認しない
+ */
+export function requiresConsent(type: EntityType, scope: EntityScope): boolean {
+  return scope === 'all' && (type === 'individual' || type === 'unknown');
+}
+
 // ---- 抽出結果 -----------------------------------------------------------------
 
 const optionalTrimmed = (max: number) => z.preprocess(unsetIfEmpty, z.string().trim().max(max).optional());
@@ -565,7 +574,8 @@ const reviewNote = z.preprocess(emptyToUndefined, z.string().trim().max(CANDIDAT
 
 /**
  * 承認: 掲載の全項目（管理者が編集した値）＋ slug・公開状態。
- * 種類が個人・不明の候補を承認するには、管理者が種類と根拠（法人番号など）を入力する（entityOverride）
+ * 種類が個人・不明の候補を承認するには、管理者が種類と根拠（法人番号など）を入力する（entityOverride）。
+ * COLLECTOR_ENTITY_SCOPE=all の場合は、本人の同意の記録（掲載申請・掲載案内への承諾など）を入力する（consent、F-119）
  */
 export const ApproveCandidateSchema = AdminServiceInputSchema.extend({
   entityOverride: z
@@ -574,6 +584,7 @@ export const ApproveCandidateSchema = AdminServiceInputSchema.extend({
       evidence: z.string().trim().min(1).max(200),
     })
     .optional(),
+  consent: z.object({ evidence: z.string().trim().min(1).max(200) }).optional(),
 });
 export type ApproveCandidateInput = z.infer<typeof ApproveCandidateSchema>;
 
@@ -635,6 +646,8 @@ export interface AdminCandidateDetail extends AdminCandidate {
   diff: CandidateFieldDiff[];
   /** COLLECTOR_ENTITY_SCOPE で承認できる種類か（false なら entityOverride が必要） */
   entityApprovable: boolean;
+  /** 承認に本人の同意の記録が必要か（F-119: COLLECTOR_ENTITY_SCOPE=all の個人事業主・不明） */
+  consentRequired: boolean;
   /** 説明文の下書き（F-117）を作成できるか（LLM が有効で、レビュー前の候補） */
   descriptionDraftAvailable: boolean;
 }
