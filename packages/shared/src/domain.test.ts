@@ -20,7 +20,7 @@ import {
 
 describe('constants', () => {
   it('defines 4 locales, 8 categories and 47 prefectures', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['ja', 'en', 'zh', 'vi']);
+    expect(SUPPORTED_LOCALES).toEqual(['ja', 'en', 'vi']);
     expect(SERVICE_CATEGORIES).toHaveLength(8);
     expect(PREFECTURES).toHaveLength(47);
     expect(new Set(PREFECTURES.map((p) => p.code)).size).toBe(47);
@@ -206,5 +206,14 @@ describe('CrawlBlocklistInputSchema / isBlockedEntity (F-116)', () => {
     expect(isBlockedEntity(entries, { corporateNumber: '1234567890123' })).toBe(true);
     expect(isBlockedEntity(entries, { websiteUrl: 'not a url' })).toBe(false);
     expect(isBlockedEntity(entries, {})).toBe(false);
+  });
+});
+
+describe('toSupportedLocales / toLocalizedText (F-120)', () => {
+  it('drops the removed zh language from data stored in the DB', async () => {
+    const { toSupportedLocales, toLocalizedText } = await import('./domain');
+    expect(toSupportedLocales(['ja', 'zh', 'vi', 'en'])).toEqual(['ja', 'vi', 'en']);
+    expect(toLocalizedText({ en: 'Clinic', ja: 'クリニック', zh: '诊所' })).toEqual({ en: 'Clinic', ja: 'クリニック' });
+    expect(toLocalizedText({ ja: 'のみ', zh: '仅' })).toEqual({ en: '', ja: 'のみ' });
   });
 });

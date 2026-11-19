@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 // ---- Locale ----------------------------------------------------------------
 
-export const SUPPORTED_LOCALES = ['ja', 'en', 'zh', 'vi'] as const;
+/** 対応言語（F-120 で zh を廃止。DB に残る zh のデータは表示・検索の対象外） */
+export const SUPPORTED_LOCALES = ['ja', 'en', 'vi'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 /** 短縮エイリアス */
 export type Locale = SupportedLocale;
@@ -14,6 +15,21 @@ export function isSupportedLocale(value: unknown): value is SupportedLocale {
 
 /** 翻訳テキスト。en は必須、他言語は任意 */
 export type LocalizedText = { en: string } & Partial<Record<SupportedLocale, string>>;
+
+/** DB の言語配列から対応言語だけを残す（廃止した zh などを除く） */
+export function toSupportedLocales(values: readonly string[]): SupportedLocale[] {
+  return values.filter(isSupportedLocale);
+}
+
+/** DB の LocalizedText（JSON）から対応言語のキーだけを残す（廃止した zh などを除く） */
+export function toLocalizedText(value: unknown): LocalizedText {
+  const record = (value ?? {}) as Record<string, unknown>;
+  const result: Record<string, string> = {};
+  for (const locale of SUPPORTED_LOCALES) {
+    if (typeof record[locale] === 'string') result[locale] = record[locale] as string;
+  }
+  return { en: '', ...result } as LocalizedText;
+}
 
 /** 指定言語のテキストを返す。欠損（未定義・空文字）時は en にフォールバック */
 export function pickText(text: LocalizedText, locale: SupportedLocale): string {
@@ -191,7 +207,6 @@ export const localizedTextInput = (max: number) =>
   z.object({
     en: z.string().trim().min(1).max(max),
     ja: optionalText(max),
-    zh: optionalText(max),
     vi: optionalText(max),
   });
 

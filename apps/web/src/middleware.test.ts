@@ -15,6 +15,22 @@ describe('middleware', () => {
   });
 });
 
+describe('middleware (zh removed, F-120)', () => {
+  it('permanently redirects /zh pages to the same English page, keeping the query', () => {
+    const top = middleware(new NextRequest('http://localhost:3000/zh'));
+    expect(top.status).toBe(308);
+    expect(top.headers.get('location')).toBe('http://localhost:3000/en');
+    const detail = middleware(new NextRequest('http://localhost:3000/zh/services/tokyo-clinic?x=1'));
+    expect(detail.status).toBe(308);
+    expect(detail.headers.get('location')).toBe('http://localhost:3000/en/services/tokyo-clinic?x=1');
+  });
+
+  it('does not negotiate Chinese for /', () => {
+    const res = middleware(new NextRequest('http://localhost:3000/', { headers: { 'accept-language': 'zh-CN,zh;q=0.9,vi;q=0.5' } }));
+    expect(res.headers.get('location')).toBe('http://localhost:3000/vi');
+  });
+});
+
 describe('middleware (admin)', () => {
   it('redirects /admin pages to the login page without the token cookie', () => {
     const res = middleware(new NextRequest('http://localhost:3000/admin/services'));

@@ -24,7 +24,7 @@ export function listingReportMessage(
   return `${topicLabel}\nslug: ${slug.data}\n\n`;
 }
 
-const DATE_LOCALES: Record<SupportedLocale, string> = { ja: 'ja-JP', en: 'en-US', zh: 'zh-CN', vi: 'vi-VN' };
+const DATE_LOCALES: Record<SupportedLocale, string> = { ja: 'ja-JP', en: 'en-US', vi: 'vi-VN' };
 
 /** 最終確認日の表示（日本時間の日付） */
 export function formatVerifiedDate(iso: string, locale: SupportedLocale): string {

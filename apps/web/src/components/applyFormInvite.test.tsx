@@ -76,8 +76,8 @@ describe('ApplyForm with an invite (F-118)', () => {
     expect(values).toMatchObject({ category: '', prefecture: '', name_ja: undefined, 'supportedLanguages=ja': false });
   });
 
-  it('has the invite and opt-out texts in all four languages', () => {
-    for (const locale of ['ja', 'en', 'zh', 'vi'] as const) {
+  it('has the invite and opt-out texts in all supported languages', () => {
+    for (const locale of ['ja', 'en', 'vi'] as const) {
       const d = getDictionary(locale);
       for (const text of [d.apply.inviteLoaded, d.apply.inviteInvalid, ...Object.values(d.optOut)]) expect(text).toBeTruthy();
     }

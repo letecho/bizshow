@@ -171,7 +171,7 @@ const CATEGORY_LABELS_JA: Record<ServiceCategory, string> = {
   daily: '生活',
 };
 
-const LANGUAGE_LABELS_JA: Record<string, string> = { ja: '日本語', en: '英語', zh: '中国語', vi: 'ベトナム語' };
+const LANGUAGE_LABELS_JA: Record<string, string> = { ja: '日本語', en: '英語', vi: 'ベトナム語' };
 
 export interface OutreachMessageInput {
   extract: CandidateExtract;

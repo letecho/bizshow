@@ -7,8 +7,8 @@ import { testApp } from './helpers/fixtures';
 const application = {
   category: 'telecom',
   prefecture: 'fukuoka',
-  supportedLanguages: ['ja', 'en', 'zh'],
-  name: { en: 'Fukuoka SIM Shop', zh: '福冈SIM卡店' },
+  supportedLanguages: ['ja', 'en', 'vi'],
+  name: { en: 'Fukuoka SIM Shop', vi: 'Cửa hàng SIM Fukuoka' },
   description: { en: 'Prepaid SIM for new arrivals.' },
   contactName: 'Kato',
   contactEmail: 'kato@example.com',
@@ -45,7 +45,7 @@ describe('admin listing requests API', () => {
     expect(res.body.data.service).toMatchObject({
       slug: 'fukuoka-sim-shop',
       category: 'telecom',
-      name: { en: 'Fukuoka SIM Shop', zh: '福冈SIM卡店' },
+      name: { en: 'Fukuoka SIM Shop', vi: 'Cửa hàng SIM Fukuoka' },
       isPublished: true,
     });
     expect(records).toHaveLength(1);

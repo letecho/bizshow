@@ -26,7 +26,6 @@ describe('formatVerifiedDate (F-116)', () => {
     // 2026-10-31T16:00Z は日本時間 11 月 1 日
     expect(formatVerifiedDate('2026-10-31T16:00:00.000Z', 'ja')).toBe('2026年11月1日');
     expect(formatVerifiedDate('2026-10-31T16:00:00.000Z', 'en')).toBe('November 1, 2026');
-    expect(formatVerifiedDate('2026-10-31T16:00:00.000Z', 'zh')).toBe('2026年11月1日');
     expect(formatVerifiedDate('2026-10-31T16:00:00.000Z', 'vi')).toContain('2026');
   });
 });

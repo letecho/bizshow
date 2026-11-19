@@ -1,10 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-// F-116: ボット説明ページ（4 言語）と、掲載詳細 → 修正・削除の依頼（お問い合わせに件名と slug が入る）
+// F-116: ボット説明ページ（3 言語）と、掲載詳細 → 修正・削除の依頼（お問い合わせに件名と slug が入る）
 const BOT_HEADINGS = {
   ja: 'クローラーについて',
   en: 'About our crawler',
-  zh: '关于我们的爬虫',
   vi: 'Về trình thu thập dữ liệu của chúng tôi',
 } as const;
 
@@ -18,6 +17,15 @@ for (const [locale, heading] of Object.entries(BOT_HEADINGS)) {
     await expect(page.locator(`article a[href="/${locale}/contact"]`)).toBeVisible();
   });
 }
+
+// F-120: 廃止した中国語のページは英語ページへ恒久リダイレクト
+test('/zh pages redirect to English', async ({ page }) => {
+  const res = await page.goto('/zh/bot');
+  expect(res?.status()).toBe(200);
+  await expect(page).toHaveURL(/\/en\/bot$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('a[hreflang="zh"], link[hreflang="zh"]')).toHaveCount(0);
+});
 
 test('detail → request a correction prefills the contact form with the subject and slug', async ({ page }) => {
   await page.goto('/ja?category=legal');

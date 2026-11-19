@@ -125,7 +125,6 @@ describe('ServiceDetailPage sources, last verified date and report link (F-116)'
       const source = findAnchors(ja).find((a) => a.href === 'https://example.go.jp/data');
       expect(source).toMatchObject({ target: '_blank', rel: 'noopener noreferrer' });
       expect(textOf(await render('en'))).toContain('Last verifiedNovember 1, 2026');
-      expect(textOf(await render('zh'))).toContain('出处');
       expect(textOf(await render('vi'))).toContain('Nguồn');
     } finally {
       Object.assign(service, { sources: [], lastVerifiedAt: null });

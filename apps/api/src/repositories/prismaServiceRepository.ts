@@ -2,14 +2,12 @@ import { Prisma, type PrismaClient, type ServiceListing } from '@prisma/client';
 import type {
   AdminService,
   AdminServiceInput,
-  LocalizedText,
   PrefectureCode,
   ServiceCategory,
   ServiceDetail,
   ServiceSummary,
-  SupportedLocale,
 } from '@fss/shared';
-import { parseListingSources } from '@fss/shared';
+import { parseListingSources, toLocalizedText, toSupportedLocales } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
 import { imageUrlFor } from '../storage/storage';
 import type { ListingProvenance } from './candidateRepository';
@@ -22,16 +20,17 @@ export function toServiceSummary(row: ServiceListing): ServiceSummary {
     category: row.category as ServiceCategory,
     prefecture: row.prefecture as PrefectureCode,
     city: row.city,
-    supportedLanguages: row.supportedLanguages as SupportedLocale[],
-    name: row.name as LocalizedText,
+    // 廃止した言語（zh）のデータが DB に残っていても出さない（F-120）
+    supportedLanguages: toSupportedLocales(row.supportedLanguages),
+    name: toLocalizedText(row.name),
   };
 }
 
 export function toServiceDetail(row: ServiceListing): ServiceDetail {
   return {
     ...toServiceSummary(row),
-    description: row.description as LocalizedText,
-    address: row.address as LocalizedText | null,
+    description: toLocalizedText(row.description),
+    address: row.address === null ? null : toLocalizedText(row.address),
     phone: row.phone,
     websiteUrl: row.websiteUrl,
     imageUrl: imageUrlFor(row.imageKey),

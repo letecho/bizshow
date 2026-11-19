@@ -12,7 +12,7 @@ const records = [
     slug: 'medical-tokyo',
     category: 'medical',
     prefecture: 'tokyo',
-    supportedLanguages: ['ja', 'en', 'zh', 'vi'],
+    supportedLanguages: ['ja', 'en', 'vi'],
     name: { en: 'Shinjuku Clinic', ja: '新宿クリニック' },
   }),
   makeRecord({ slug: 'housing-hidden', category: 'housing', isPublished: false, supportedLanguages: ['vi'] }),
@@ -31,7 +31,7 @@ describe('GET /api/v1/services', () => {
       category: 'medical',
       prefecture: 'tokyo',
       city: null,
-      supportedLanguages: ['ja', 'en', 'zh', 'vi'],
+      supportedLanguages: ['ja', 'en', 'vi'],
       name: { en: 'Shinjuku Clinic', ja: '新宿クリニック' },
     });
   });
@@ -58,6 +58,12 @@ describe('GET /api/v1/services', () => {
     const res = await request(app).get('/api/v1/services?page=2&limit=2');
     expect(res.body.meta).toEqual({ page: 2, limit: 2, total: 3 });
     expect(res.body.data.map((s: { slug: string }) => s.slug)).toEqual(['legal-tokyo']);
+  });
+
+  it('lang=zh returns 400 VALIDATION_ERROR (zh removed, F-120)', async () => {
+    const res = await request(app).get('/api/v1/services?lang=zh');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('limit=100 returns 400 VALIDATION_ERROR', async () => {

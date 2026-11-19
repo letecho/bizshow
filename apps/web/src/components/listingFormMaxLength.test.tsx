@@ -35,7 +35,7 @@ function maxLengths(node: ReactNode, result: Record<string, number | null> = {})
 }
 
 const localized = (field: 'name' | 'description' | 'address') =>
-  Object.fromEntries(['ja', 'en', 'zh', 'vi'].map((l) => [`${field}_${l}`, LISTING_TEXT_MAX[field]]));
+  Object.fromEntries(['ja', 'en', 'vi'].map((l) => [`${field}_${l}`, LISTING_TEXT_MAX[field]]));
 
 const listingFields = {
   city: LISTING_TEXT_MAX.city,

@@ -143,11 +143,12 @@ describe('parsePage / selectFollowLinks', () => {
       expect.arrayContaining([
         { lang: 'ja', signal: 'html_lang', url: top.toString() },
         { lang: 'en', signal: 'hreflang', url: top.toString() },
-        { lang: 'zh', signal: 'hreflang', url: top.toString() },
         { lang: 'vi', signal: 'switch_link', url: 'https://www.example.jp/vi/' },
       ]),
     );
     expect(hints.some((h) => h.lang === 'vi' && h.signal === 'path')).toBe(false);
+    // F-120: 中国語は対応言語ではないため根拠にしない
+    expect(hints.some((h) => (h.lang as string) === 'zh')).toBe(false);
     expect(parsePage(page(''), new URL('https://www.example.jp/vi/about')).hints).toContainEqual({
       lang: 'vi',
       signal: 'path',

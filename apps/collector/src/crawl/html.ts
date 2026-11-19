@@ -1,4 +1,4 @@
-import type { SupportedLocale, WebsiteLanguageSignal } from '@fss/shared';
+import { isSupportedLocale, type SupportedLocale, type WebsiteLanguageSignal } from '@fss/shared';
 
 /**
  * HTML から対応言語の手がかりとリンクを取り出す（依存を増やさない簡易パーサー）。
@@ -44,30 +44,21 @@ function attrs(tag: string): Record<string, string> {
 export function localeFromTag(tag: string | undefined): SupportedLocale | undefined {
   const t = (tag ?? '').trim().toLowerCase().replace('_', '-');
   const primary = t.split('-')[0];
-  if (primary === 'ja' || primary === 'en' || primary === 'zh' || primary === 'vi') return primary;
-  return undefined;
+  return isSupportedLocale(primary) ? primary : undefined;
 }
 
 /** 言語切替のリンクの文言（自言語名・英語名・日本語名） */
 const LANGUAGE_NAMES: { lang: SupportedLocale; re: RegExp }[] = [
   { lang: 'vi', re: /^(ti[eế]ng\s*vi[eệ]t|vietnamese|ベトナム語|越南[语語]|vn|vi)$/i },
-  { lang: 'zh', re: /^(中文|简体中文|繁體中文|繁体中文|简体|繁體|chinese|中国語|中國語|汉语|漢語|cn|zh)$/i },
   { lang: 'en', re: /^(english|英語|英语|en)$/i },
   { lang: 'ja', re: /^(日本語|japanese|jp|ja)$/i },
 ];
 
-/** パスの先頭の言語（/en/, /zh-cn/, /vi/ など） */
+/** パスの先頭の言語（/en/, /vi/ など） */
 const PATH_LANGS: Record<string, SupportedLocale> = {
   en: 'en',
   'en-us': 'en',
   'en-gb': 'en',
-  zh: 'zh',
-  'zh-cn': 'zh',
-  'zh-tw': 'zh',
-  'zh-hans': 'zh',
-  'zh-hant': 'zh',
-  cn: 'zh',
-  tw: 'zh',
   vi: 'vi',
   vn: 'vi',
   ja: 'ja',

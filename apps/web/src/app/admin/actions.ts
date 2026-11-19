@@ -183,7 +183,7 @@ const DRAFT_ERRORS: Record<string, string> = {
   LLM_INVALID_OUTPUT: '下書きを作成できませんでした（出力が検証に通りませんでした）。もう一度お試しください。',
 };
 
-/** 説明文の下書き（F-117）。候補の事実（名称・カテゴリ・地域・対応言語）から 4 言語の短い説明文を作る。保存はしない */
+/** 説明文の下書き（F-117）。候補の事実（名称・カテゴリ・地域・対応言語）から 3 言語（ja/en/vi）の短い説明文を作る。保存はしない */
 export async function draftCandidateDescription(id: string): Promise<DescriptionDraftState> {
   const res = await adminFetch(`/candidates/${encodeURIComponent(id)}/description-draft`, { method: 'POST' });
   if (res.status === 401 || res.status === 403) redirect('/admin/login');

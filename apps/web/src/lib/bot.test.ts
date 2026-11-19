@@ -14,6 +14,6 @@ describe('bot page content (F-116)', () => {
   });
 
   it('replaces the contact URL placeholder', () => {
-    expect(fillBotPlaceholders('[c]({{contactUrl}}) [d]({{contactUrl}})', 'zh')).toBe('[c](/zh/contact) [d](/zh/contact)');
+    expect(fillBotPlaceholders('[c]({{contactUrl}}) [d]({{contactUrl}})', 'vi')).toBe('[c](/vi/contact) [d](/vi/contact)');
   });
 });

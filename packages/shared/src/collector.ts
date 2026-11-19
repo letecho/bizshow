@@ -370,7 +370,6 @@ const candidateText = (max: number) =>
     .object({
       ja: optionalTrimmed(max),
       en: optionalTrimmed(max),
-      zh: optionalTrimmed(max),
       vi: optionalTrimmed(max),
     })
     .refine((t) => Boolean(t.ja || t.en), { message: 'ja or en is required' });
