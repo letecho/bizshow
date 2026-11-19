@@ -33,6 +33,16 @@ pnpm --filter collector collect --source mhlw-medical --file /path/to/download.z
 - カテゴリは常に `medical`。都道府県はコード（01〜47）・名称から変換、電話は数字と `+` だけに正規化、http(s) で始まらない URL は採用しません
 - 外国語対応の列の値は `languageEvidence`（kind=`open_data`）と `supportedLanguages` に入ります。列が無い・空・対応表に無い言語だけのときは空で、score が下がります（承認時に人が設定）
 
+## 名寄せとスコア（F-114）
+
+- 保存する候補ごとに、既存の掲載（全件）と pending の候補（同じ実行で保存した分を含む）と照合します（`src/match/matcher.ts`）
+  - 照合順: 法人番号の一致 → 正規化した電話番号の一致（`03-1234-5678` / `0312345678` / `+81 3 1234 5678` は同じ）→ 都道府県と正規化した住所（全角半角・空白・ハイフン・「丁目/番地/号」を統一）が一致し、名称の類似度が `COLLECTOR_MATCH_NAME_THRESHOLD`（既定 0.8）以上
+  - 既存の掲載と一致 → `matchType=update`・`matchedListingId`、pending の候補と一致 → `duplicate`、それ以外 → `new`
+- 法人番号（国税庁 法人番号システム Web-API）は `CORPORATE_NUMBER_API_ID` を設定したときだけ名称＋都道府県（＋住所）で照会します。未設定なら照会しません
+  - 名称が一致する法人を 1 件に絞れたときだけ採用し、`corporateNumber` を記録。法人格表記の無い名称でも法人番号が見つかれば `corporation`（根拠 `corporate_number`）。閉鎖法人は score 0
+  - 照会に失敗しても収集は続けます（`errorSample` に記録）。アプリケーション ID はエラーに出しません
+- `score`（0〜100、重みは `packages/shared` の `CANDIDATE_SCORE_WEIGHTS`）: 情報源の信頼度（open_data・partner 40 / api 30 / crawl 20）＋必須項目（名称・住所・電話・都道府県）の充足 最大 30 ＋対応言語の根拠（対象言語 20 / それ以外の外国語のみ 10）＋別の情報源の候補と一致 10
+
 ## 何を保存しないか
 
 | 対象外 | 設定 | 記録 |

@@ -198,3 +198,78 @@ describe('CandidateExtractSchema (F-111)', () => {
     expect(hasTargetLanguageEvidence([], ['vi'])).toBe(false);
   });
 });
+
+describe('matching normalizers (F-114)', () => {
+  it('treats phone number notations as the same number', async () => {
+    const { normalizePhoneForMatch } = await import('./collector');
+    const expected = '0312345678';
+    for (const p of ['03-1234-5678', '0312345678', '+81 3 1234 5678', '+81-(0)3-1234-5678', '０３（１２３４）５６７８']) {
+      expect(normalizePhoneForMatch(p)).toBe(expected);
+    }
+    expect(normalizePhoneForMatch('03-1234-5679')).not.toBe(expected);
+    expect(normalizePhoneForMatch('')).toBeUndefined();
+    expect(normalizePhoneForMatch('12')).toBeUndefined();
+  });
+
+  it('treats address notations (full-width digits, 丁目, hyphens, spaces, prefecture) as the same address', async () => {
+    const { normalizeAddressForMatch } = await import('./collector');
+    const expected = normalizeAddressForMatch('東京都新宿区西新宿2-8-1');
+    expect(expected).toBe('新宿区西新宿2-8-1');
+    for (const a of ['東京都新宿区西新宿２丁目８番１号', '新宿区西新宿2丁目8-1', '東京都 新宿区 西新宿 2－8－1', '東京都新宿区西新宿２ー８ー１', '東京都新宿区西新宿2‐8‐1']) {
+      expect(normalizeAddressForMatch(a)).toBe(expected);
+    }
+    expect(normalizeAddressForMatch('東京都新宿区西新宿2-8-2')).not.toBe(expected);
+    // 数字に挟まれていない長音記号（センター等）は変えない
+    expect(normalizeAddressForMatch('新宿区センター1-1')).toBe('新宿区センター1-1');
+  });
+
+  it('computes name similarity ignoring legal-entity notations', async () => {
+    const { nameSimilarity } = await import('./collector');
+    expect(nameSimilarity('医療法人社団 さくら会 さくらクリニック', 'さくら会さくらクリニック')).toBe(1);
+    expect(nameSimilarity('株式会社サンプル', '(株)サンプル')).toBe(1);
+    expect(nameSimilarity('さくらクリニック新宿', 'さくらクリニック')).toBeGreaterThanOrEqual(0.8);
+    expect(nameSimilarity('さくらクリニック', 'ひまわり歯科')).toBeLessThan(0.3);
+  });
+});
+
+describe('scoreCandidate (F-114)', () => {
+  const full = { name: { ja: 'x' }, address: { ja: 'y' }, phone: '0300000000', prefecture: 'tokyo' as const };
+  const vi = [{ lang: 'vi' as const, kind: 'open_data', value: 'v' }];
+  const en = [{ lang: 'en' as const, kind: 'open_data', value: 'e' }];
+  const base = { targetLanguages: ['vi' as const], matchedOtherSource: false };
+
+  it('adds source reliability, required fields, language evidence and multi-source agreement', async () => {
+    const { scoreCandidate } = await import('./collector');
+    expect(scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence: vi, matchedOtherSource: true })).toBe(100);
+    expect(scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence: vi })).toBe(90);
+    expect(scoreCandidate({ ...base, sourceKind: 'partner', extracted: full, languageEvidence: en })).toBe(80);
+    expect(scoreCandidate({ ...base, sourceKind: 'crawl', extracted: full, languageEvidence: [] })).toBe(50);
+    expect(scoreCandidate({ ...base, sourceKind: 'api', extracted: full, languageEvidence: [] })).toBe(60);
+  });
+
+  it('scores required fields proportionally (boundaries 0..4 fields)', async () => {
+    const { scoreCandidate } = await import('./collector');
+    const s = (extracted: Record<string, unknown>) =>
+      scoreCandidate({ ...base, sourceKind: 'crawl', extracted: extracted as never, languageEvidence: [] }) - 20;
+    expect(s({})).toBe(0);
+    expect(s({ prefecture: 'tokyo' })).toBe(8);
+    expect(s({ prefecture: 'tokyo', name: { ja: 'x' } })).toBe(15);
+    expect(s({ prefecture: 'tokyo', name: { ja: 'x' }, phone: '0300000000' })).toBe(23);
+    expect(s(full)).toBe(30);
+  });
+
+  it('scores target-language evidence higher than other languages only, and ignores ja', async () => {
+    const { scoreCandidate } = await import('./collector');
+    const s = (languageEvidence: { lang: 'ja' | 'en' | 'zh' | 'vi'; kind: string; value: string }[]) =>
+      scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence });
+    expect(s(vi)).toBeGreaterThan(s(en));
+    expect(s([...en, ...vi])).toBe(90);
+    expect(s(en)).toBe(80);
+    expect(s([{ lang: 'ja', kind: 'open_data', value: 'j' }])).toBe(70);
+  });
+
+  it('returns 0 for a closed corporation', async () => {
+    const { scoreCandidate } = await import('./collector');
+    expect(scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence: vi, closedCorporation: true })).toBe(0);
+  });
+});

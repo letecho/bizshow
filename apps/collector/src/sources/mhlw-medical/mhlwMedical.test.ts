@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { loadCollectorConfig } from '@fss/shared';
-import { runCollection, LANGUAGE_EVIDENCE_SCORE, TARGET_LANGUAGE_SCORE_BONUS } from '../../run';
+import { runCollection } from '../../run';
 import { createMemoryRepository } from '../../testing';
 import type { DataSourceRecord } from '../../types';
 import defaultMapping from './mapping.json';
@@ -99,23 +99,24 @@ describe('mhlw-medical adapter (F-112)', () => {
       { lang: 'vi', kind: 'open_data', value: '対応することができる外国語の種類: ベトナム語' },
     ]);
     expect(sakura.hasTargetLanguage).toBe(true);
-    expect(sakura.score).toBe(LANGUAGE_EVIDENCE_SCORE + TARGET_LANGUAGE_SCORE_BONUS);
+    // open_data 40 + 必須項目 30 + 対象言語 20（F-114）
+    expect(sakura.score).toBe(90);
     expect(get('F0007')!.hasTargetLanguage).toBe(true);
     // en・zh のみは根拠ありだが対象言語ではない
-    expect(get('F0002')!).toMatchObject({ hasTargetLanguage: false, score: LANGUAGE_EVIDENCE_SCORE });
+    expect(get('F0002')!).toMatchObject({ hasTargetLanguage: false, score: 80 });
   });
 
   it('leaves supportedLanguages empty and lowers the score when there is no foreign-language value', async () => {
     const { get } = await collect();
     // 空欄（F0004）・対応表に無い言語のみ（F0010）
     for (const id of ['F0004', 'F0010']) {
-      expect(get(id)!).toMatchObject({ languageEvidence: [], hasTargetLanguage: false, score: 0 });
+      expect(get(id)!).toMatchObject({ languageEvidence: [], hasTargetLanguage: false, score: 70 });
       expect(get(id)!.extracted.supportedLanguages).toEqual([]);
     }
     // 列そのものが無い mapping
     const noColumn = { ...defaultMapping, columns: { ...defaultMapping.columns, foreignLanguages: null } };
     const { get: get2 } = await collect({ mapping: noColumn });
-    expect(get2('F0001')!).toMatchObject({ languageEvidence: [], score: 0 });
+    expect(get2('F0001')!).toMatchObject({ languageEvidence: [], score: 70 });
     expect(get2('F0001')!.extracted.supportedLanguages).toEqual([]);
   });
 

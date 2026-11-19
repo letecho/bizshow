@@ -394,3 +394,101 @@ export function hasTargetLanguageEvidence(
 ): boolean {
   return evidence.some((e) => targetLanguages.includes(e.lang));
 }
+
+// ---- 名寄せ用の正規化（F-114） --------------------------------------------------
+
+/** 電話番号を照合用に正規化（数字のみ、+81 は国内の 0 始まりに） */
+export function normalizePhoneForMatch(phone: string | null | undefined): string | undefined {
+  if (!phone) return undefined;
+  const v = phone.normalize('NFKC').trim();
+  let digits = v.replace(/\D/g, '');
+  if (v.startsWith('+81') || (digits.startsWith('81') && digits.length >= 11 && !digits.startsWith('0'))) {
+    digits = `0${digits.slice(2).replace(/^0/, '')}`;
+  }
+  return digits.length >= 6 ? digits : undefined;
+}
+
+const HYPHENS = /[‐‑‒–—―−－ｰ]/g;
+
+/**
+ * 住所を照合用に正規化する。全角半角・空白・ハイフンの種類・「丁目/番地/番/号」の表記ゆれを統一し、
+ * 先頭の都道府県名を除く（都道府県は別項目で照合する）。
+ */
+export function normalizeAddressForMatch(address: string | null | undefined): string | undefined {
+  if (!address) return undefined;
+  let v = address.normalize('NFKC').replace(/\s+/g, '').replace(HYPHENS, '-');
+  // 数字に挟まれた長音記号はハイフンの誤記
+  v = v.replace(/(\d)ー(?=\d)/g, '$1-');
+  v = v.replace(/(\d+)丁目/g, '$1-').replace(/(\d+)番地?/g, '$1-').replace(/(\d+)号/g, '$1');
+  v = v.replace(/-+/g, '-').replace(/-$/, '');
+  const pref = PREFECTURES.find((p) => v.startsWith(p.ja));
+  if (pref) v = v.slice(pref.ja.length);
+  return v.toLowerCase() || undefined;
+}
+
+const NAME_NOISE = /株式会社|有限会社|合同会社|一般社団法人|一般財団法人|公益社団法人|公益財団法人|特定非営利活動法人|社会福祉法人|医療法人社団|医療法人財団|医療法人|学校法人|\((株|有|医|社福|一社|一財)\)|co\.,?ltd\.?|inc\.?|[\s・.,、。]/gi;
+
+/** 名称の類似度（法人格表記・空白・記号を除いた文字 bigram の Dice 係数、0〜1） */
+export function nameSimilarity(a: string, b: string): number {
+  const norm = (s: string) => s.normalize('NFKC').toLowerCase().replace(NAME_NOISE, '');
+  const x = norm(a);
+  const y = norm(b);
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  const grams = (s: string) => {
+    const m = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) m.set(s.slice(i, i + 2), (m.get(s.slice(i, i + 2)) ?? 0) + 1);
+    return m;
+  };
+  const gx = grams(x);
+  const gy = grams(y);
+  let overlap = 0;
+  for (const [g, n] of gx) overlap += Math.min(n, gy.get(g) ?? 0);
+  const total = Math.max(x.length - 1, 0) + Math.max(y.length - 1, 0);
+  return total === 0 ? 0 : (2 * overlap) / total;
+}
+
+// ---- スコア（F-114） ---------------------------------------------------------
+
+/** 候補のスコアの重み（合計 100） */
+export const CANDIDATE_SCORE_WEIGHTS = {
+  /** 情報源の信頼度 */
+  source: { open_data: 40, partner: 40, api: 30, crawl: 20 } satisfies Record<DataSourceKind, number>,
+  /** 必須項目（名称・住所・電話・都道府県）がすべて揃ったときの点。項目数に比例 */
+  requiredFields: 30,
+  /** 対象言語（COLLECTOR_TARGET_LANGUAGES）の根拠がある */
+  targetLanguage: 20,
+  /** 対象言語以外の外国語の根拠だけがある */
+  otherForeignLanguage: 10,
+  /** 別の情報源の候補と一致した */
+  multiSource: 10,
+} as const;
+
+export interface ScoreInput {
+  sourceKind: DataSourceKind;
+  extracted: Pick<CandidateExtract, 'name' | 'address' | 'phone' | 'prefecture'>;
+  languageEvidence: readonly LanguageEvidence[];
+  targetLanguages: readonly SupportedLocale[];
+  matchedOtherSource: boolean;
+  /** 法人番号 API で閉鎖法人と確認できた */
+  closedCorporation?: boolean;
+}
+
+/** 候補の信頼度（0〜100）。閉鎖法人は 0 */
+export function scoreCandidate(input: ScoreInput): number {
+  if (input.closedCorporation) return 0;
+  const w = CANDIDATE_SCORE_WEIGHTS;
+  const e = input.extracted;
+  const filled = [Boolean(e.name?.ja || e.name?.en), Boolean(e.address?.ja || e.address?.en), Boolean(e.phone), Boolean(e.prefecture)].filter(
+    Boolean,
+  ).length;
+  const foreign = input.languageEvidence.filter((l) => l.lang !== 'ja');
+  const language = foreign.some((l) => input.targetLanguages.includes(l.lang))
+    ? w.targetLanguage
+    : foreign.length > 0
+      ? w.otherForeignLanguage
+      : 0;
+  const score =
+    w.source[input.sourceKind] + Math.round((w.requiredFields * filled) / 4) + language + (input.matchedOtherSource ? w.multiSource : 0);
+  return Math.max(0, Math.min(100, score));
+}

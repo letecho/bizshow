@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { loadCollectorConfig } from '@fss/shared';
-import { runCollection, LANGUAGE_EVIDENCE_SCORE, TARGET_LANGUAGE_SCORE_BONUS } from './run';
+import { runCollection } from './run';
 import { createMemoryRepository } from './testing';
 import type { CollectedRecord, DataSourceRecord, SourceAdapter } from './types';
 
@@ -46,9 +46,10 @@ describe('runCollection (F-111)', () => {
       errorSample: undefined,
     });
     const a = candidates.get('test-source/a')!;
-    expect(a).toMatchObject({ entityType: 'corporation', hasTargetLanguage: true, matchType: 'new', score: LANGUAGE_EVIDENCE_SCORE + TARGET_LANGUAGE_SCORE_BONUS, status: 'pending' });
+    expect(a).toMatchObject({ entityType: 'corporation', hasTargetLanguage: true, matchType: 'new', score: 40 + 15 + 20, status: 'pending' });
     expect(a.extracted).not.toHaveProperty('director');
-    expect(candidates.get('test-source/b')!.score).toBe(0);
+    // open_data 40 + 必須項目 2/4（名称・都道府県）15 + 言語の根拠なし 0
+    expect(candidates.get('test-source/b')!.score).toBe(55);
     expect(runs).toHaveLength(1);
     expect(runs[0]).toMatchObject({ sourceId: 'test-source', status: 'succeeded', result: { candidateCount: 2 } });
     expect(runs[0].finishedAt).toBeInstanceOf(Date);
@@ -137,5 +138,87 @@ describe('runCollection (F-111)', () => {
     });
     expect(result).toMatchObject({ status: 'failed', fetchedCount: 0, candidateCount: 0, errorSample: 'download failed: 503' });
     expect(mem.runs[0]).toMatchObject({ status: 'failed' });
+  });
+});
+
+describe('runCollection matching and scoring (F-114)', () => {
+  const listing = { kind: 'listing' as const, id: 'L1', names: ['既存クリニック'], prefecture: 'tokyo', phone: '03-1234-5678', address: null, corporateNumber: '1234567890123' };
+
+  function withPhone(id: string, phone: string, name = `医療法人 ${id}`): CollectedRecord {
+    const r = record(id, { name });
+    return { ...r, extracted: { ...(r.extracted as object), phone } };
+  }
+
+  it('sets matchType update and matchedListingId for a known phone number', async () => {
+    const mem = createMemoryRepository([source], [listing]);
+    const { candidates } = await run([withPhone('a', '+81 3 1234 5678'), withPhone('b', '03-0000-0000')], {}, mem);
+    expect(candidates.get('test-source/a')).toMatchObject({ matchType: 'update', matchedListingId: 'L1' });
+    expect(candidates.get('test-source/b')).toMatchObject({ matchType: 'new' });
+    expect(candidates.get('test-source/b')!.matchedListingId).toBeUndefined();
+  });
+
+  it('marks duplicates within the same run', async () => {
+    const { candidates } = await run([withPhone('a', '03-5555-5555'), withPhone('b', '0355555555')]);
+    expect(candidates.get('test-source/a')!.matchType).toBe('new');
+    expect(candidates.get('test-source/b')!.matchType).toBe('duplicate');
+  });
+
+  it('does not look up corporate numbers without a client (CORPORATE_NUMBER_API_ID unset)', async () => {
+    const { result } = await run([record('a')]);
+    expect(result.status).toBe('succeeded');
+  });
+
+  it('uses corporate number lookups: rescues unknown entities, matches by number and zeroes closed corporations', async () => {
+    const mem = createMemoryRepository([source], [listing]);
+    const lookup = vi.fn(async ({ name }: { name: string }) => {
+      if (name === 'さくらクリニック') return { corporateNumber: '9999999999999', closed: false };
+      if (name === '既存と違う名前') return { corporateNumber: '1234567890123', closed: false };
+      if (name === '医療法人 閉鎖') return { corporateNumber: '8888888888888', closed: true };
+      return null;
+    });
+    const result = await runCollection({
+      source,
+      adapter: adapter([
+        record('unknown', { name: 'さくらクリニック' }),
+        record('renamed', { name: '既存と違う名前' }),
+        record('closed', { name: '医療法人 閉鎖' }),
+        record('stillUnknown', { name: 'ひまわり' }),
+      ]),
+      config: loadCollectorConfig({}),
+      repo: mem.repo,
+      corporateNumberClient: { lookup },
+    });
+    // 法人格表記が無くても法人番号が見つかれば corporation
+    expect(mem.candidates.get('test-source/unknown')).toMatchObject({
+      entityType: 'corporation',
+      corporateNumber: '9999999999999',
+      entityEvidence: [{ kind: 'corporate_number', value: '9999999999999' }],
+    });
+    // 法人番号が一致すれば名称が違っても update
+    expect(mem.candidates.get('test-source/renamed')).toMatchObject({ matchType: 'update', matchedListingId: 'L1' });
+    expect(mem.candidates.get('test-source/closed')!.score).toBe(0);
+    // 見つからなければ既存の判定のまま（unknown は保存しない）
+    expect(mem.candidates.has('test-source/stillUnknown')).toBe(false);
+    expect(result.skippedByEntityCount).toBe(1);
+    expect(lookup).toHaveBeenCalledTimes(4);
+  });
+
+  it('continues without corporate numbers when the lookup fails', async () => {
+    const mem = createMemoryRepository([source]);
+    const result = await runCollection({
+      source,
+      adapter: adapter([record('a'), record('b')]),
+      config: loadCollectorConfig({}),
+      repo: mem.repo,
+      corporateNumberClient: { lookup: async () => Promise.reject(new Error('corporate number lookup failed: HTTP 503')) },
+    });
+    expect(result).toMatchObject({ status: 'succeeded', candidateCount: 2 });
+    expect(result.errorSample).toBe('corporate number lookup failed: HTTP 503');
+  });
+
+  it('scores vi evidence higher than en-only evidence under the same conditions', async () => {
+    const en: CollectedRecord = { ...record('en'), languageEvidence: [{ lang: 'en', kind: 'source_field', value: '英語' }] };
+    const { candidates } = await run([en, record('vi', { vi: true })]);
+    expect(candidates.get('test-source/vi')!.score).toBeGreaterThan(candidates.get('test-source/en')!.score);
   });
 });

@@ -27,6 +27,8 @@ model ServiceListing {
   websiteUrl         String?
   /// 掲載画像のストレージキー（F-107）。配信は CDN 経由
   imageKey           String?
+  /// 法人番号（13 桁、F-114 の名寄せに使う）
+  corporateNumber    String?
   /// 全言語の name + description を小文字で連結した検索用テキスト
   searchText         String
   isPublished        Boolean  @default(true)
@@ -35,6 +37,7 @@ model ServiceListing {
 
   @@index([category, prefecture])
   @@index([isPublished])
+  @@index([corporateNumber])
 }
 
 /// お問い合わせ（F-103）
