@@ -96,3 +96,11 @@
   margin: 4px 0 0;
   padding-left: 1.25em;
 }
+
+/* B-016: display を指定したクラスでも hidden 属性（言語タブの非選択パネルなど）で非表示にする */
+.form[hidden],
+.field[hidden],
+.fieldset[hidden],
+.checks[hidden] {
+  display: none;
+}
