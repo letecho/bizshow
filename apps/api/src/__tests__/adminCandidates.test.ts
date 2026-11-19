@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
-import type { CandidateExtract } from '@fss/shared';
+import { createBudgetedLlm, createMemoryLlmUsageStore, type CandidateExtract, type LlmClient } from '@fss/shared';
 import { createInMemoryCandidateRepository, type InMemoryCandidateRecord } from '../repositories/candidateRepository';
 import { createInMemoryServiceRepository } from '../repositories/inMemoryServiceRepository';
 import { makeRecord, testApp } from './helpers/fixtures';
@@ -184,5 +184,93 @@ describe('admin candidates API (F-113)', () => {
     expect((await request(app).get('/api/v1/admin/candidates/nope')).status).toBe(404);
     expect((await request(app).post('/api/v1/admin/candidates/nope/approve').send(approval)).status).toBe(404);
     expect((await request(app).post('/api/v1/admin/candidates/nope/reject').send({})).status).toBe(404);
+  });
+});
+
+describe('description draft (F-117)', () => {
+  const draft = { ja: '新宿区の医療機関です。', en: 'A clinic in Shinjuku.', zh: '位于新宿区的诊所。', vi: 'Phòng khám ở Shinjuku.' };
+  const settings = { enabled: true, monthlyBudgetJpy: 100, model: 'test-model', priceInPerMTokJpy: 500, priceOutPerMTokJpy: 2500, apiKey: 'dummy' };
+
+  function setupLlm(text: string | null, opts: { spent?: number; fail?: boolean } = {}) {
+    const complete = vi.fn<LlmClient['complete']>();
+    if (opts.fail) complete.mockRejectedValue(new Error('provider error with sk-secret'));
+    else complete.mockResolvedValue({ text, tokensIn: 100, tokensOut: 50 });
+    const { store, entries } = createMemoryLlmUsageStore(
+      opts.spent ? [{ month: '2026-11', purpose: 'extract', model: 'test-model', tokensIn: 0, tokensOut: 0, costJpy: opts.spent }] : [],
+    );
+    const llm = createBudgetedLlm({ client: { complete }, store, settings, now: () => new Date('2026-11-19T00:00:00Z') });
+    const c = candidate({
+      extracted: {
+        city: '新宿区',
+        description: { ja: '収集元の説明文 SOURCE-DESCRIPTION' },
+        address: { ja: '東京都新宿区西新宿1-1-1 SOURCE-ADDRESS' },
+        phone: '03-1234-5678',
+      },
+    });
+    const services = createInMemoryServiceRepository([]);
+    const repo = createInMemoryCandidateRepository([c], services);
+    const app = testApp([], { serviceRepository: services, candidateRepository: repo, llm });
+    return { app, c, complete, entries, repo };
+  }
+
+  it('is unavailable when the LLM is disabled (default)', async () => {
+    const { app } = setup([candidate()]);
+    const id = (await request(app).get('/api/v1/admin/candidates')).body.data[0].id;
+    expect((await request(app).get(`/api/v1/admin/candidates/${id}`)).body.data.descriptionDraftAvailable).toBe(false);
+    const res = await request(app).post(`/api/v1/admin/candidates/${id}/description-draft`);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('LLM_DISABLED');
+  });
+
+  it('returns a 4-language draft built from facts only and records the usage', async () => {
+    const { app, c, complete, entries, repo } = setupLlm(JSON.stringify(draft));
+    expect((await request(app).get(`/api/v1/admin/candidates/${c.id}`)).body.data.descriptionDraftAvailable).toBe(true);
+    const res = await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ data: { description: draft } });
+    const req = complete.mock.calls[0]![0];
+    const input = req.system + req.user;
+    expect(input).toContain('新宿区');
+    expect(input).not.toContain('SOURCE-DESCRIPTION');
+    expect(input).not.toContain('SOURCE-ADDRESS');
+    expect(input).not.toContain('03-1234-5678');
+    expect(entries).toEqual([{ month: '2026-11', purpose: 'description_draft', model: 'test-model', tokensIn: 100, tokensOut: 50, costJpy: 0.175 }]);
+    // 下書きは保存しない
+    expect(repo.records[0]!.extracted.description).toEqual({ ja: '収集元の説明文 SOURCE-DESCRIPTION' });
+  });
+
+  it('skips the call once the monthly budget is reached', async () => {
+    const { app, c, complete } = setupLlm(JSON.stringify(draft), { spent: 100 });
+    const res = await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('LLM_BUDGET_EXCEEDED');
+    expect(complete).not.toHaveBeenCalled();
+  });
+
+  it('rejects output that fails validation', async () => {
+    const { app, c } = setupLlm(JSON.stringify({ ja: 'a', en: 'b' }));
+    const res = await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`);
+    expect(res.status).toBe(502);
+    expect(res.body.error.code).toBe('LLM_INVALID_OUTPUT');
+  });
+
+  it('does not leak provider errors', async () => {
+    const { app, c } = setupLlm(null, { fail: true });
+    const res = await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`);
+    expect(res.status).toBe(502);
+    expect(res.body.error.code).toBe('LLM_UNAVAILABLE');
+    expect(JSON.stringify(res.body)).not.toContain('sk-secret');
+  });
+
+  it('is not available for reviewed candidates', async () => {
+    const { app, c } = setupLlm(JSON.stringify(draft));
+    await request(app).post(`/api/v1/admin/candidates/${c.id}/reject`).send({});
+    expect((await request(app).get(`/api/v1/admin/candidates/${c.id}`)).body.data.descriptionDraftAvailable).toBe(false);
+    expect((await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`)).status).toBe(409);
+  });
+
+  it('requires authentication', async () => {
+    const app = testApp([], { auth: { mode: 'cognito', verify: () => Promise.reject(new Error('x')) } });
+    expect((await request(app).post('/api/v1/admin/candidates/x/description-draft')).status).toBe(401);
   });
 });

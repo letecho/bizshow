@@ -188,6 +188,8 @@ model ServiceCandidate {
   matchType         CandidateMatchType  @default(new)
   /// 0〜100（F-114）
   score             Int                 @default(0)
+  /// LLM で空欄を補完した項目（F-117）。管理者の確認が必要
+  llmFilledFields   String[]            @default([])
   status            CandidateStatus     @default(pending)
   reviewNote        String?
   reviewedBy        String?
@@ -216,4 +218,21 @@ model CrawlBlocklist {
 
   @@index([domain])
   @@index([corporateNumber])
+}
+
+/// LLM の呼び出しごとの使用量（F-117）。当月の costJpy の合計が COLLECTOR_LLM_MONTHLY_BUDGET_JPY に達したら呼ばない
+model LlmUsage {
+  id        String   @id @default(cuid())
+  /// YYYY-MM（日本時間）
+  month     String
+  /// extract | description_draft
+  purpose   String
+  model     String
+  tokensIn  Int
+  tokensOut Int
+  /// 概算費用（円）。COLLECTOR_LLM_PRICE_*_PER_MTOK_JPY で計算
+  costJpy   Float
+  createdAt DateTime @default(now())
+
+  @@index([month])
 }

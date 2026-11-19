@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { appCache, loadEntityScope, loadStaleDays, type EntityScope } from '@fss/shared';
+import { appCache, loadEntityScope, loadStaleDays, type BudgetedLlm, type EntityScope } from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
 import { requireAdmin, type AuthOptions } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/errors';
@@ -31,6 +31,8 @@ export interface AppOptions {
   entityScope?: EntityScope;
   /** 管理画面の「未確認の掲載」の基準日数（既定: env COLLECTOR_STALE_DAYS、未設定 180） */
   staleDays?: number;
+  /** 候補の説明文の下書きに使う LLM（F-117）。未指定なら下書きは使えない（main.ts が env から作る） */
+  llm?: BudgetedLlm;
   mailer: Mailer;
   /** 管理 API の認証（AUTH_MODE=dev | cognito） */
   auth: AuthOptions;
@@ -106,6 +108,7 @@ export function createApp(options: AppOptions) {
       staleDays: options.staleDays ?? loadStaleDays(process.env),
       candidates: options.candidateRepository,
       entityScope: options.entityScope ?? loadEntityScope(process.env),
+      llm: options.llm,
     }),
   );
 

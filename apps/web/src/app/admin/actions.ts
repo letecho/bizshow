@@ -10,6 +10,7 @@ import {
   type UploadTicket,
 } from '@fss/shared/domain';
 import { ApproveCandidateSchema, HoldCandidateSchema, RejectCandidateSchema } from '@fss/shared/collector';
+import { DescriptionDraftSchema, type DescriptionDraft } from '@fss/shared/llm';
 import { adminFetch } from '../../lib/adminApi';
 import { listingFormToInput } from '../../lib/listingForm';
 
@@ -162,4 +163,29 @@ export async function reviewCandidate(id: string, decision: 'reject' | 'hold', _
   if (!res.ok) return { error: await errorMessage(res) };
   revalidatePath('/admin/candidates');
   redirect('/admin/candidates');
+}
+
+export interface DescriptionDraftState {
+  description?: DescriptionDraft;
+  error?: string;
+}
+
+const DRAFT_ERRORS: Record<string, string> = {
+  LLM_DISABLED: '説明文の下書きは利用できません（LLM が無効です）。',
+  LLM_BUDGET_EXCEEDED: '今月の LLM の予算上限に達したため、下書きを作成できません。',
+  LLM_UNAVAILABLE: 'LLM に接続できませんでした。時間をおいて再度お試しください。',
+  LLM_INVALID_OUTPUT: '下書きを作成できませんでした（出力が検証に通りませんでした）。もう一度お試しください。',
+};
+
+/** 説明文の下書き（F-117）。候補の事実（名称・カテゴリ・地域・対応言語）から 4 言語の短い説明文を作る。保存はしない */
+export async function draftCandidateDescription(id: string): Promise<DescriptionDraftState> {
+  const res = await adminFetch(`/candidates/${encodeURIComponent(id)}/description-draft`, { method: 'POST' });
+  if (res.status === 401 || res.status === 403) redirect('/admin/login');
+  const body = (await res.json().catch(() => null)) as { data?: { description?: unknown }; error?: { code?: string } } | null;
+  if (!res.ok) {
+    if (res.status === 409 && body?.error?.code === 'CONFLICT') return { error: 'この候補は処理済みです。' };
+    return { error: DRAFT_ERRORS[body?.error?.code ?? ''] ?? `下書きを作成できませんでした（${res.status}）。` };
+  }
+  const parsed = DescriptionDraftSchema.safeParse(body?.data?.description);
+  return parsed.success ? { description: parsed.data } : { error: DRAFT_ERRORS.LLM_INVALID_OUTPUT };
 }

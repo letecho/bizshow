@@ -1,6 +1,7 @@
 import type { CollectorConfig } from '@fss/shared';
 import type { Fetcher, FetchResult } from './fetcher';
 import { MAX_REDIRECTS } from './fetcher';
+import { htmlToText, type PageText } from '../llm/extract';
 import { parsePage, selectFollowLinks, type LanguageHint } from './html';
 import { ALLOW_ALL, parseRobots, type RobotsRules } from './robots';
 import type { CrawlStateData, PageRecord } from './state';
@@ -28,6 +29,8 @@ export interface SiteCrawlResult {
   pagesFetched: number;
   /** HTTP リクエスト数（robots.txt・リダイレクトを含む） */
   requests: number;
+  /** この実行で取得したページの本文（タグ除去済み。LLM の抽出用、F-117）。記録を使ったページは含まない */
+  pages: PageText[];
   error?: string;
 }
 
@@ -173,7 +176,7 @@ export class Crawler {
     url: URL,
     rules: RobotsRules,
     counter: { requests: number; pages: number },
-  ): Promise<{ record: PageRecord; links?: ReturnType<typeof parsePage>['links']; finalUrl: URL } | { stop: string; suspended?: boolean }> {
+  ): Promise<{ record: PageRecord; links?: ReturnType<typeof parsePage>['links']; finalUrl: URL; text?: string } | { stop: string; suspended?: boolean }> {
     const recent = this.recentRecord(url);
     if (recent) return { record: recent, finalUrl: url };
     const res = await this.fetchPage(url, rules, counter);
@@ -195,18 +198,20 @@ export class Crawler {
       hints: parsed.hints,
     };
     this.deps.state.pages[key] = record;
-    return { record, links: parsed.links, finalUrl: res.url };
+    return { record, links: parsed.links, finalUrl: res.url, text: htmlToText(res.body) };
   }
 
   /** サイトを取得し、対応言語の手がかりを返す。取得はトップ＋言語切替・会社概要等のリンクで最大 COLLECTOR_CRAWL_MAX_PAGES */
   async crawlSite(start: URL): Promise<SiteCrawlResult> {
     const counter = { requests: 0, pages: 0 };
     const hints: LanguageHint[] = [];
+    const pages: PageText[] = [];
     const out = (status: SiteCrawlStatus, error?: string): SiteCrawlResult => ({
       status,
       hints,
       pagesFetched: counter.pages,
       requests: counter.requests,
+      pages,
       error,
     });
     if (start.protocol !== 'http:' && start.protocol !== 'https:') return out('failed', 'unsupported protocol');
@@ -222,6 +227,7 @@ export class Crawler {
     const top = await this.visit(start, rules, counter);
     if ('stop' in top) return out(top.suspended ? 'suspended' : 'failed', top.stop);
     mergeHints(hints, top.record.hints);
+    if (top.text) pages.push({ url: top.finalUrl.toString(), text: top.text });
 
     // 追加取得先はトップページを取得したときに選び、記録を使うときは記録した一覧を使う
     let follow = top.record.follow?.map((u) => new URL(u));
@@ -239,6 +245,7 @@ export class Crawler {
         continue;
       }
       mergeHints(hints, page.record.hints);
+      if (page.text) pages.push({ url: page.finalUrl.toString(), text: page.text });
     }
     return out('crawled');
   }

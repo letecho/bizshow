@@ -6,11 +6,16 @@ import {
 } from "@fss/shared/collector";
 import { AdminHeader } from "../../../../components/admin/AdminHeader";
 import { CandidateReviewForm } from "../../../../components/admin/CandidateReviewForm";
+import { DescriptionDraftButton } from "../../../../components/admin/DescriptionDraftButton";
 import { ServiceForm } from "../../../../components/admin/ServiceForm";
 import formStyles from "../../../../components/Form.module.css";
 import { adminFetch } from "../../../../lib/adminApi";
 import { candidateFormDefaults } from "../../../../lib/candidateForm";
-import { approveCandidate, reviewCandidate } from "../../actions";
+import {
+  approveCandidate,
+  draftCandidateDescription,
+  reviewCandidate,
+} from "../../actions";
 import styles from "../../admin.module.css";
 import {
   CANDIDATE_STATUS_LABELS,
@@ -19,6 +24,14 @@ import {
 } from "../labels";
 
 export const dynamic = "force-dynamic";
+
+/** LLM で補完した項目（F-117）の表示名 */
+const LLM_FIELD_LABELS: Record<string, string> = {
+  phone: "電話",
+  address: "住所",
+  city: "市区町村",
+  "name.en": "名称（英語）",
+};
 
 const FIELD_LABELS: Record<CandidateDiffField, string> = {
   category: "カテゴリ",
@@ -124,6 +137,18 @@ export default async function CandidateDetailPage({ params }: Props) {
                 </div>
               ),
             )}
+            {c.llmFilledFields && c.llmFilledFields.length > 0 && (
+              <>
+                <dt>LLM で補完した項目</dt>
+                <dd>
+                  要確認:{" "}
+                  {c.llmFilledFields
+                    .map((f) => LLM_FIELD_LABELS[f] ?? f)
+                    .join(", ")}
+                  （公式サイトから LLM で抽出した値です。サイトで事実を確認してから承認してください）
+                </dd>
+              </>
+            )}
             <dt>対応言語の根拠</dt>
             <dd>
               {c.languageEvidence.length === 0 ? (
@@ -203,6 +228,11 @@ export default async function CandidateDetailPage({ params }: Props) {
                   : "承認して作成"
               }
             >
+              {c.descriptionDraftAvailable && (
+                <DescriptionDraftButton
+                  action={draftCandidateDescription.bind(null, c.id)}
+                />
+              )}
               {!c.entityApprovable && (
                 <fieldset className={formStyles.fieldset}>
                   <legend>事業者の種類の確認（必須）</legend>

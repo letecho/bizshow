@@ -1,6 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import { getAdmin } from '../../middleware/auth';
-import type { EntityScope } from '@fss/shared';
+import type { BudgetedLlm, EntityScope } from '@fss/shared';
 import type { BlocklistRepository } from '../../repositories/blocklistRepository';
 import type { CandidateRepository } from '../../repositories/candidateRepository';
 import type { ListingRequestRepository } from '../../repositories/listingRequestRepository';
@@ -23,6 +23,8 @@ export interface AdminRouterOptions {
   candidates: CandidateRepository;
   /** 候補の承認で認める事業者の種類（COLLECTOR_ENTITY_SCOPE） */
   entityScope: EntityScope;
+  /** 説明文の下書き（F-117） */
+  llm?: BudgetedLlm;
 }
 
 /** /api/v1/admin 配下。すべて requireAdmin を通す */
@@ -35,6 +37,7 @@ export function adminRouter({
   staleDays,
   candidates,
   entityScope,
+  llm,
 }: AdminRouterOptions): Router {
   const router = Router();
   router.use(requireAdmin);
@@ -48,7 +51,7 @@ export function adminRouter({
   router.use('/listing-requests', adminListingRequestsRouter(listingRequests, services));
   router.use('/uploads', adminUploadsRouter(storage));
   router.use('/blocklist', adminBlocklistRouter(blocklist));
-  router.use('/candidates', adminCandidatesRouter({ candidates, services, entityScope }));
+  router.use('/candidates', adminCandidatesRouter({ candidates, services, entityScope, llm }));
 
   return router;
 }

@@ -34,7 +34,7 @@ describe('loadCollectorConfig (F-111)', () => {
       recrawlDays: 30,
       userAgent: 'bizshow-collector/0.1 (+http://localhost:3000/bot)',
     });
-    expect(c.llm).toEqual({ enabled: false, monthlyBudgetJpy: 0, model: undefined });
+    expect(c.llm).toEqual({ enabled: false, monthlyBudgetJpy: 0, model: undefined, priceInPerMTokJpy: 500, priceOutPerMTokJpy: 2500, apiKey: undefined });
     expect(c.corporateNumberApiId).toBeUndefined();
     expect(c.matchNameThreshold).toBe(0.8);
     expect(c.staleDays).toBe(180);
@@ -71,7 +71,7 @@ describe('loadCollectorConfig (F-111)', () => {
     expect(c.crawl.enabled).toBe(true);
     expect(c.crawl.intervalSec).toBe(5);
     expect(c.crawl.userAgent).toBe('custom-ua');
-    expect(c.llm).toEqual({ enabled: false, monthlyBudgetJpy: 3000, model: 'some-model' });
+    expect(c.llm).toMatchObject({ enabled: false, monthlyBudgetJpy: 3000, model: 'some-model' });
   });
 
   it.each([

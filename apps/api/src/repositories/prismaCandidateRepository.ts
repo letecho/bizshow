@@ -38,6 +38,7 @@ function toAdminCandidate(row: Row): AdminCandidate {
     matchedListingId: row.matchedListingId,
     matchType: row.matchType,
     score: row.score,
+    llmFilledFields: row.llmFilledFields,
     status: row.status,
     reviewNote: row.reviewNote,
     reviewedBy: row.reviewedBy,

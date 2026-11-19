@@ -4,6 +4,7 @@ import type { CandidateInput, CollectorRepository, DataSourceRecord, RunResult }
 
 export interface StoredCandidate extends CandidateInput {
   status: 'pending' | 'approved' | 'rejected' | 'on_hold';
+  llmFilledFields?: string[];
 }
 
 export interface StoredRun {
@@ -57,6 +58,8 @@ export function createMemoryRepository(
         .map(([key, c]) => ({
           id: key,
           websiteUrl: c.extracted.websiteUrl!,
+          extracted: c.extracted,
+          llmFilledFields: c.llmFilledFields ?? [],
           languageEvidence: c.languageEvidence,
           hasTargetLanguage: c.hasTargetLanguage,
           score: c.score,
@@ -64,6 +67,12 @@ export function createMemoryRepository(
         }));
     },
     async updateCandidateLanguageEvidence(id, update) {
+      const c = candidates.get(id);
+      if (!c || c.status !== 'pending') return false;
+      candidates.set(id, { ...c, ...update });
+      return true;
+    },
+    async updateCandidateExtraction(id, update) {
       const c = candidates.get(id);
       if (!c || c.status !== 'pending') return false;
       candidates.set(id, { ...c, ...update });

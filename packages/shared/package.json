@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./domain": "./src/domain.ts",
-    "./collector": "./src/collector.ts"
+    "./collector": "./src/collector.ts",
+    "./llm": "./src/llm.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -15,6 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
     "ioredis": "^5.4.1",
     "lru-cache": "^11.0.2",
     "zod": "^4.6.7"
