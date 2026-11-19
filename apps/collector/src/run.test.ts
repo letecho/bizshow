@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { loadCollectorConfig } from '@fss/shared';
-import { runCollection, TARGET_LANGUAGE_SCORE_BONUS } from './run';
+import { runCollection, LANGUAGE_EVIDENCE_SCORE, TARGET_LANGUAGE_SCORE_BONUS } from './run';
 import { createMemoryRepository } from './testing';
 import type { CollectedRecord, DataSourceRecord, SourceAdapter } from './types';
 
@@ -46,7 +46,7 @@ describe('runCollection (F-111)', () => {
       errorSample: undefined,
     });
     const a = candidates.get('test-source/a')!;
-    expect(a).toMatchObject({ entityType: 'corporation', hasTargetLanguage: true, matchType: 'new', score: TARGET_LANGUAGE_SCORE_BONUS, status: 'pending' });
+    expect(a).toMatchObject({ entityType: 'corporation', hasTargetLanguage: true, matchType: 'new', score: LANGUAGE_EVIDENCE_SCORE + TARGET_LANGUAGE_SCORE_BONUS, status: 'pending' });
     expect(a.extracted).not.toHaveProperty('director');
     expect(candidates.get('test-source/b')!.score).toBe(0);
     expect(runs).toHaveLength(1);

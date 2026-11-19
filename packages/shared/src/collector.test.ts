@@ -113,6 +113,13 @@ describe('classifyEntity (F-111)', () => {
     expect(classifyEntity({ name: '株式会社前のクリニック', sourceOwnerType: '個人' }).entityType).toBe('individual');
   });
 
+  it('uses the entity type mapped by the source over the heuristics', () => {
+    expect(classifyEntity({ name: '中央病院', sourceOwnerType: '独立行政法人', sourceEntityType: 'public' })).toEqual({
+      entityType: 'public',
+      entityEvidence: [{ kind: 'source_field', value: '独立行政法人' }],
+    });
+  });
+
   it('uses a verified corporate number', () => {
     expect(classifyEntity({ name: 'さくら', verifiedCorporateNumber: '1234567890123' })).toEqual({
       entityType: 'corporation',

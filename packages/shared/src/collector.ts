@@ -209,6 +209,8 @@ export interface EntityClassificationInput {
   name: string;
   /** ソースの開設者種別などの項目（例: 医療法人・個人・国・都道府県・市町村） */
   sourceOwnerType?: string | null;
+  /** ソースごとの対応表（例: mapping.json）で sourceOwnerType から決めた種類。あれば推定より優先 */
+  sourceEntityType?: EntityType | null;
   /** 法人番号 API で実在を確認できた法人番号（F-114） */
   verifiedCorporateNumber?: string | null;
 }
@@ -304,7 +306,9 @@ export function classifyEntity(input: EntityClassificationInput): EntityClassifi
     entityType ??= type;
   };
 
-  if (input.sourceOwnerType) {
+  if (input.sourceEntityType) {
+    decide(input.sourceEntityType, { kind: 'source_field', value: input.sourceOwnerType?.trim() || input.sourceEntityType });
+  } else if (input.sourceOwnerType) {
     const r = classifySourceOwnerType(input.sourceOwnerType);
     if (r) decide(r.type, { kind: 'source_field', value: r.value });
   }

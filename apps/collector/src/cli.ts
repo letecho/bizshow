@@ -3,21 +3,32 @@ import { runCollection } from './run';
 import { sourceAdapters } from './sources';
 import type { CollectorRepository, SourceAdapter } from './types';
 
-export const USAGE = `Usage: pnpm --filter collector collect --source <DataSource.id>
+export const USAGE = `Usage: pnpm --filter collector collect --source <DataSource.id> [--file <path>]
+
+  --file <path>  read the source data from a local file (e.g. a downloaded ZIP) instead of downloading it
 
 Collects listing candidates from one data source and records a CollectionRun.
 Candidates are reviewed by an administrator before they become listings.
 Settings are read from COLLECTOR_* environment variables (see .env.example).`;
 
-export type CliArgs = { help: true } | { help: false; source: string };
+export type CliArgs = { help: true } | { help: false; source: string; file?: string };
+
+function option(argv: readonly string[], name: string): string | undefined {
+  const inline = argv.find((a) => a.startsWith(`${name}=`));
+  if (inline) return inline.slice(name.length + 1);
+  const i = argv.indexOf(name);
+  if (i < 0) return undefined;
+  const value = argv[i + 1];
+  if (!value || value.startsWith('-')) throw new Error(`${name} requires a value`);
+  return value;
+}
 
 export function parseArgs(argv: readonly string[]): CliArgs {
   if (argv.includes('--help') || argv.includes('-h')) return { help: true };
-  const i = argv.indexOf('--source');
-  const inline = argv.find((a) => a.startsWith('--source='));
-  const source = inline ? inline.slice('--source='.length) : i >= 0 ? argv[i + 1] : undefined;
-  if (!source || source.startsWith('-')) throw new Error('--source <id> is required');
-  return { help: false, source };
+  const source = option(argv, '--source');
+  if (!source) throw new Error('--source <id> is required');
+  const file = option(argv, '--file');
+  return file ? { help: false, source, file } : { help: false, source };
 }
 
 export interface MainDeps {
@@ -60,7 +71,7 @@ export async function main(argv: readonly string[], deps: MainDeps): Promise<num
     return 1;
   }
 
-  const result = await runCollection({ source, adapter, config, repo: deps.repo });
+  const result = await runCollection({ source, adapter, config, repo: deps.repo, options: { file: args.file } });
   log(JSON.stringify({ source: source.id, ...result }));
   return result.status === 'succeeded' ? 0 : 1;
 }

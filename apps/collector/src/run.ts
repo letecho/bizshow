@@ -7,7 +7,9 @@ import {
 } from '@fss/shared';
 import type { CandidateInput, CollectorRepository, DataSourceRecord, RunCounts, RunResult, SourceAdapter } from './types';
 
-/** prioritize で対象言語の根拠がある候補に加える点数（本格的なスコアは F-114） */
+/** 対応言語の根拠がある候補に加える点数（本格的なスコアは F-114） */
+export const LANGUAGE_EVIDENCE_SCORE = 10;
+/** 対象言語の根拠がある候補にさらに加える点数 */
 export const TARGET_LANGUAGE_SCORE_BONUS = 10;
 const ERROR_SAMPLE_MAX = 500;
 const ERROR_SAMPLE_ITEMS = 3;
@@ -17,6 +19,7 @@ export interface RunCollectionOptions {
   adapter: SourceAdapter;
   config: CollectorConfig;
   repo: CollectorRepository;
+  options?: { file?: string };
   now?: () => Date;
 }
 
@@ -24,7 +27,14 @@ export interface RunCollectionOptions {
  * 1 ソースを収集して掲載候補を保存し、CollectionRun に結果を残す。
  * 対象外（カテゴリ・都道府県・事業者の種類・対象言語）の候補は保存しない。ServiceListing は作らない。
  */
-export async function runCollection({ source, adapter, config, repo, now = () => new Date() }: RunCollectionOptions): Promise<RunResult> {
+export async function runCollection({
+  source,
+  adapter,
+  config,
+  repo,
+  options = {},
+  now = () => new Date(),
+}: RunCollectionOptions): Promise<RunResult> {
   const startedAt = now();
   const runId = await repo.startRun(source.id, startedAt);
   const counts: RunCounts = {
@@ -39,7 +49,7 @@ export async function runCollection({ source, adapter, config, repo, now = () =>
   let result: RunResult;
 
   try {
-    const records = await adapter.collect({ source, config, now: startedAt });
+    const records = await adapter.collect({ source, config, now: startedAt, options });
     counts.fetchedCount = records.length;
 
     const eligible: CandidateInput[] = [];
@@ -57,6 +67,7 @@ export async function runCollection({ source, adapter, config, repo, now = () =>
       const entity = classifyEntity({
         name: extracted.name.ja ?? extracted.name.en ?? '',
         sourceOwnerType: record.sourceOwnerType,
+        sourceEntityType: record.sourceEntityType,
       });
       if (!isEntityInScope(entity.entityType, config.entityScope)) {
         counts.skippedByEntityCount += 1;
@@ -82,7 +93,8 @@ export async function runCollection({ source, adapter, config, repo, now = () =>
         entityEvidence: entity.entityEvidence,
         corporateNumber: extracted.corporateNumber,
         matchType: 'new',
-        score: hasTargetLanguage ? TARGET_LANGUAGE_SCORE_BONUS : 0,
+        score:
+          (record.languageEvidence.length > 0 ? LANGUAGE_EVIDENCE_SCORE : 0) + (hasTargetLanguage ? TARGET_LANGUAGE_SCORE_BONUS : 0),
       });
     }
 

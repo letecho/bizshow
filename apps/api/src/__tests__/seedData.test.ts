@@ -30,3 +30,24 @@ describe('SEED_LISTINGS', () => {
     }
   });
 });
+
+describe('DATA_SOURCES seed (F-112)', () => {
+  it('registers the MHLW medical open data as a disabled source without overwriting isEnabled on re-seed', async () => {
+    const { DATA_SOURCES } = await import('../db/dataSources');
+    const { seed } = await import('../db/seed');
+    expect(DATA_SOURCES.find((s) => s.id === 'mhlw-medical')).toMatchObject({
+      kind: 'open_data',
+      license: 'CC BY 4.0',
+      attribution: '出典: 医療情報ネット（厚生労働省）のデータを加工して作成',
+    });
+    const upserts: { create: Record<string, unknown>; update: Record<string, unknown> }[] = [];
+    const prisma = {
+      serviceListing: { upsert: async () => ({}) },
+      dataSource: { upsert: async (args: (typeof upserts)[number]) => upserts.push(args) },
+    };
+    await seed(prisma as never);
+    expect(upserts).toHaveLength(DATA_SOURCES.length);
+    expect(upserts[0].create).toMatchObject({ id: 'mhlw-medical', isEnabled: false });
+    expect(upserts[0].update).not.toHaveProperty('isEnabled');
+  });
+});
