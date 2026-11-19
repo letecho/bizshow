@@ -5,6 +5,7 @@
 ## アーキテクチャ概要
 - **フロントエンド (`apps/web`)**: Next.js (App Router / TypeScript)
 - **バックエンド (`apps/api`)**: Node.js + Express / Prisma ORM (PostgreSQL)
+- **データ収集 (`apps/collector`)**: 公開データから掲載候補を集めるワーカー。候補は管理者の承認で掲載になる（[README](apps/collector/README.md)）
 - **共通パッケージ (`packages/shared`)**: バリデーションスキーマ・将来拡張スイッチ対応キャッシュ層 (`LRU` <-> `Valkey`)
 - **インフラ (`infra/terraform`)**: AWS (ECS Fargate Spot併用 / RDS PostgreSQL PITR / S3 / Cognito / SSM) + 将来拡張フラグ (`variables.tf`)
 - **CI/CD (`.github/workflows`)**: GitHub Actions (Lint / Typecheck / Test / E2E / OIDC ECR・ECSデプロイ)

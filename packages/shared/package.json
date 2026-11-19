@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./domain": "./src/domain.ts"
+    "./domain": "./src/domain.ts",
+    "./collector": "./src/collector.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
