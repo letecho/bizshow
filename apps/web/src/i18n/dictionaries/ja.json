@@ -39,6 +39,7 @@
     "category": "カテゴリ",
     "area": "地域",
     "address": "住所",
+    "openInMap": "Google マップで開く（新しいタブ）",
     "phone": "電話",
     "website": "Webサイト",
     "languages": "対応言語",
