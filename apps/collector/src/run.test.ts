@@ -222,3 +222,42 @@ describe('runCollection matching and scoring (F-114)', () => {
     expect(candidates.get('test-source/vi')!.score).toBeGreaterThan(candidates.get('test-source/en')!.score);
   });
 });
+
+describe('runCollection blocklist (F-116)', () => {
+  const withSite = (id: string, websiteUrl: string, corporateNumber?: string): CollectedRecord => {
+    const r = record(id);
+    return { ...r, extracted: { ...(r.extracted as object), websiteUrl, ...(corporateNumber && { corporateNumber }) } };
+  };
+
+  it('does not create candidates for blocked domains (including subdomains) or corporate numbers', async () => {
+    const mem = createMemoryRepository([source], [], [
+      { domain: 'blocked.example', corporateNumber: null },
+      { domain: null, corporateNumber: '1111111111111' },
+    ]);
+    const { result, candidates } = await run(
+      [
+        withSite('domain', 'https://blocked.example/'),
+        withSite('subdomain', 'https://www.blocked.example/clinic'),
+        withSite('corp', 'https://ok.example/', '1111111111111'),
+        withSite('lookalike', 'https://notblocked.example/'),
+        record('noSite'),
+      ],
+      {},
+      mem,
+    );
+    expect([...candidates.keys()].sort()).toEqual(['test-source/lookalike', 'test-source/noSite']);
+    expect(result).toMatchObject({ status: 'succeeded', fetchedCount: 5, candidateCount: 2 });
+  });
+
+  it('also checks corporate numbers found by the lookup', async () => {
+    const mem = createMemoryRepository([source], [], [{ domain: null, corporateNumber: '2222222222222' }]);
+    await runCollection({
+      source,
+      adapter: adapter([record('a')]),
+      config: loadCollectorConfig({}),
+      repo: mem.repo,
+      corporateNumberClient: { lookup: async () => ({ corporateNumber: '2222222222222', closed: false }) },
+    });
+    expect(mem.candidates.size).toBe(0);
+  });
+});

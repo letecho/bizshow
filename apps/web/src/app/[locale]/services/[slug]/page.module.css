@@ -93,3 +93,19 @@
   border-radius: 8px;
   margin-bottom: 16px;
 }
+
+.sources {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.report {
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+
+.report a {
+  color: #0f766e;
+}

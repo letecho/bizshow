@@ -1,3 +1,4 @@
+import type { CrawlBlockEntry } from '@fss/shared';
 import type { MatchTarget } from './match/matcher';
 import type { CandidateInput, CollectorRepository, DataSourceRecord, RunResult } from './types';
 
@@ -15,7 +16,11 @@ export interface StoredRun {
 }
 
 /** テスト用のメモリ上のリポジトリ（Prisma 実装と同じ upsert 規則） */
-export function createMemoryRepository(sources: DataSourceRecord[], listings: MatchTarget[] = []) {
+export function createMemoryRepository(
+  sources: DataSourceRecord[],
+  listings: MatchTarget[] = [],
+  blocklist: Pick<CrawlBlockEntry, 'domain' | 'corporateNumber'>[] = [],
+) {
   const candidates = new Map<string, StoredCandidate>();
   const runs: StoredRun[] = [];
   const repo: CollectorRepository = {
@@ -42,6 +47,9 @@ export function createMemoryRepository(sources: DataSourceRecord[], listings: Ma
       if (existing.status !== 'pending') return 'kept';
       candidates.set(key, { ...input, status: 'pending' });
       return 'updated';
+    },
+    async loadBlocklist() {
+      return blocklist;
     },
     async loadMatchTargets() {
       const pending = [...candidates.values()].filter((c) => c.status === 'pending');

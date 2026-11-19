@@ -28,13 +28,18 @@ export async function loadLegalDocument(
   locale: SupportedLocale,
   dir: string = LEGAL_CONTENT_DIR,
 ): Promise<LegalDocument> {
+  return loadMarkdownDocument(dir, page, locale);
+}
+
+/** content/ 配下の {name}.{locale}.md を指定言語 → en → ja の順に読む（法務ページ・ボット説明ページで共用） */
+export async function loadMarkdownDocument(dir: string, name: string, locale: SupportedLocale): Promise<LegalDocument> {
   for (const candidate of legalFallbackChain(locale)) {
     try {
-      const markdown = await readFile(path.join(dir, `${page}.${candidate}.md`), 'utf8');
+      const markdown = await readFile(path.join(dir, `${name}.${candidate}.md`), 'utf8');
       return { markdown, locale: candidate };
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
     }
   }
-  throw new Error(`Legal document not found: ${page}`);
+  throw new Error(`Document not found: ${name}`);
 }

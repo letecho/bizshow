@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import {
   AdminServiceInputSchema,
   ApproveListingRequestSchema,
+  CrawlBlocklistInputSchema,
   UploadRequestSchema,
   type UploadTicket,
 } from '@fss/shared/domain';
@@ -100,4 +101,27 @@ export async function createUploadTicket(
   const res = await adminFetch('/uploads', { method: 'POST', body: JSON.stringify(parsed.data) });
   if (!res.ok) return { error: await errorMessage(res) };
   return { ticket: ((await res.json()) as { data: UploadTicket }).data };
+}
+
+/** ブロックリストに追加（F-116） */
+export async function createBlockEntry(_prev: FormState, form: FormData): Promise<FormState> {
+  const parsed = CrawlBlocklistInputSchema.safeParse({
+    domain: String(form.get('domain') ?? ''),
+    corporateNumber: String(form.get('corporateNumber') ?? ''),
+    reason: String(form.get('reason') ?? ''),
+    note: String(form.get('note') ?? ''),
+  });
+  if (!parsed.success) {
+    return { error: 'ドメイン（例: example.com）または法人番号（13 桁）のどちらかを正しく入力し、理由を選んでください（メモは 500 字まで）。' };
+  }
+  const res = await adminFetch('/blocklist', { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (!res.ok) return { error: await errorMessage(res) };
+  revalidatePath('/admin/blocklist');
+  redirect('/admin/blocklist');
+}
+
+export async function deleteBlockEntry(id: string): Promise<void> {
+  const res = await adminFetch(`/blocklist/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!res.ok && res.status !== 404) throw new Error(await errorMessage(res));
+  revalidatePath('/admin/blocklist');
 }

@@ -1,0 +1,31 @@
+import { expect, test } from '@playwright/test';
+
+// F-116: ボット説明ページ（4 言語）と、掲載詳細 → 修正・削除の依頼（お問い合わせに件名と slug が入る）
+const BOT_HEADINGS = {
+  ja: 'クローラーについて',
+  en: 'About our crawler',
+  zh: '关于我们的爬虫',
+  vi: 'Về trình thu thập dữ liệu của chúng tôi',
+} as const;
+
+for (const [locale, heading] of Object.entries(BOT_HEADINGS)) {
+  test(`bot page is available in ${locale}`, async ({ page }) => {
+    const res = await page.goto(`/${locale}/bot`);
+    expect(res?.status()).toBe(200);
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
+    await expect(page.getByText('bizshow-collector/0.1')).toBeVisible();
+    await expect(page.locator(`article a[href="/${locale}/contact"]`)).toBeVisible();
+  });
+}
+
+test('detail → request a correction prefills the contact form with the subject and slug', async ({ page }) => {
+  await page.goto('/ja?category=legal');
+  await page.locator('article').first().getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/ja\/services\/legal-/);
+  const slug = new URL(page.url()).pathname.split('/').pop()!;
+
+  await page.getByRole('link', { name: '掲載情報の修正・削除を依頼' }).click();
+  await expect(page).toHaveURL(`/ja/contact?topic=listing&slug=${slug}`);
+  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(`【掲載情報の修正・削除の依頼】\nslug: ${slug}\n\n`);
+});

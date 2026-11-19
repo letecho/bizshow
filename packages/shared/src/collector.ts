@@ -156,6 +156,13 @@ export class CollectorConfigError extends Error {
   }
 }
 
+/** COLLECTOR_STALE_DAYS だけを読む（API の /admin?stale=1 用。他の収集設定の不正で API を止めない） */
+export function loadStaleDays(env: Record<string, string | undefined>): number {
+  const parsed = CollectorEnvSchema.shape.COLLECTOR_STALE_DAYS.safeParse(env.COLLECTOR_STALE_DAYS);
+  if (!parsed.success) throw new CollectorConfigError([`COLLECTOR_STALE_DAYS: ${parsed.error.issues[0]?.message}`]);
+  return parsed.data;
+}
+
 /** 環境変数から収集の設定を読む。不正値は CollectorConfigError */
 export function loadCollectorConfig(env: Record<string, string | undefined>): CollectorConfig {
   const parsed = CollectorEnvSchema.safeParse(env);

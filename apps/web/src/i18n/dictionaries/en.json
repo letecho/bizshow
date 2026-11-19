@@ -43,8 +43,11 @@
     "phone": "Phone",
     "website": "Website",
     "languages": "Supported languages",
+    "sources": "Source",
+    "lastVerified": "Last verified",
     "back": "Back to search",
-    "error": "Could not load this service. Please try again later."
+    "error": "Could not load this service. Please try again later.",
+    "reportListing": "Request a correction or removal of this listing"
   },
   "legal": {
     "terms": "Terms of Use",
@@ -63,7 +66,8 @@
     "invalid": "Please check your name, email and message (up to 2,000 characters).",
     "invalidFields": "Please check the following fields:",
     "rateLimited": "Too many messages. Please wait a while and try again.",
-    "error": "Could not send your message. Please try again later."
+    "error": "Could not send your message. Please try again later.",
+    "listingTopic": "[Correction / removal request for a listing]"
   },
   "footer": {
     "nav": "Site information",
@@ -90,5 +94,8 @@
     "title": "Page not found",
     "body": "The page you are looking for does not exist or may have been moved.",
     "back": "Back to search"
+  },
+  "bot": {
+    "title": "About our crawler"
   }
 }

@@ -15,6 +15,8 @@ const service: ServiceDetail = {
   phone: null,
   websiteUrl: null,
   imageUrl: 'https://cdn.example.com/uploads/a.jpg',
+  sources: [],
+  lastVerifiedAt: null,
 } as unknown as ServiceDetail;
 
 vi.mock('../../../../lib/api', () => ({
@@ -84,5 +86,55 @@ describe('ServiceDetailPage Google Maps link (F-110)', () => {
     } finally {
       Object.assign(service, { address: null });
     }
+  });
+});
+
+/** 要素ツリーのテキストをつなげる */
+function textOf(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join('');
+  if (!isValidElement<{ children?: ReactNode }>(node)) return '';
+  return textOf(node.props.children);
+}
+
+async function render(locale: string) {
+  return ServiceDetailPage({ params: Promise.resolve({ locale, slug: service.slug }) });
+}
+
+describe('ServiceDetailPage sources, last verified date and report link (F-116)', () => {
+  it('shows no source or last verified date for a manually entered listing', async () => {
+    const text = textOf(await render('ja'));
+    expect(text).not.toContain('出典');
+    expect(text).not.toContain('最終確認日');
+  });
+
+  it('shows the sources and the last verified date in each locale', async () => {
+    Object.assign(service, {
+      sources: [
+        { attribution: '出典: 医療情報ネット（厚生労働省）のデータを加工して作成', url: 'https://example.go.jp/data' },
+        { attribution: 'Partner data', url: null },
+      ],
+      lastVerifiedAt: '2026-10-31T16:00:00.000Z',
+    });
+    try {
+      const ja = await render('ja');
+      const text = textOf(ja);
+      expect(text).toContain('出典');
+      expect(text).toContain('Partner data');
+      expect(text).toContain('最終確認日2026年11月1日');
+      const source = findAnchors(ja).find((a) => a.href === 'https://example.go.jp/data');
+      expect(source).toMatchObject({ target: '_blank', rel: 'noopener noreferrer' });
+      expect(textOf(await render('en'))).toContain('Last verifiedNovember 1, 2026');
+      expect(textOf(await render('zh'))).toContain('出处');
+      expect(textOf(await render('vi'))).toContain('Nguồn');
+    } finally {
+      Object.assign(service, { sources: [], lastVerifiedAt: null });
+    }
+  });
+
+  it('links to the contact form with the listing topic and slug', async () => {
+    const link = findAnchors(await render('vi')).find((a) => a.href?.includes('/contact'));
+    expect(link).toMatchObject({ href: '/vi/contact?topic=listing&slug=tokyo-legal' });
+    expect(textOf(link?.children)).toBe('Yêu cầu sửa hoặc xóa thông tin đăng tải');
   });
 });

@@ -90,6 +90,18 @@ describe('GET /api/v1/services/:slug', () => {
     expect(res.body).toEqual({ data: { ...expected, imageUrl: null } });
   });
 
+  it('includes sources and the last verified date (F-116)', async () => {
+    const sources = [{ attribution: '出典: 医療情報ネット（厚生労働省）のデータを加工して作成', url: 'https://example.go.jp/data' }];
+    const sourcedApp = testApp([
+      makeRecord({ slug: 'sourced', sources, lastVerifiedAt: '2026-11-01T00:00:00.000Z' }),
+      makeRecord({ slug: 'manual' }),
+    ]);
+    const sourced = await request(sourcedApp).get('/api/v1/services/sourced');
+    expect(sourced.body.data).toMatchObject({ sources, lastVerifiedAt: '2026-11-01T00:00:00.000Z' });
+    const manual = await request(sourcedApp).get('/api/v1/services/manual');
+    expect(manual.body.data).toMatchObject({ sources: [], lastVerifiedAt: null });
+  });
+
   it('returns 404 NOT_FOUND for an unknown slug', async () => {
     const res = await request(app).get('/api/v1/services/no-such-service');
     expect(res.status).toBe(404);

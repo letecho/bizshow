@@ -43,8 +43,11 @@
     "phone": "Điện thoại",
     "website": "Trang web",
     "languages": "Ngôn ngữ hỗ trợ",
+    "sources": "Nguồn",
+    "lastVerified": "Ngày xác nhận gần nhất",
     "back": "Quay lại tìm kiếm",
-    "error": "Không thể tải dịch vụ này. Vui lòng thử lại sau."
+    "error": "Không thể tải dịch vụ này. Vui lòng thử lại sau.",
+    "reportListing": "Yêu cầu sửa hoặc xóa thông tin đăng tải"
   },
   "legal": {
     "terms": "Điều khoản sử dụng",
@@ -63,7 +66,8 @@
     "invalid": "Vui lòng kiểm tra họ tên, email và nội dung (tối đa 2.000 ký tự).",
     "invalidFields": "Vui lòng kiểm tra các mục sau:",
     "rateLimited": "Bạn đã gửi quá nhiều lần. Vui lòng thử lại sau.",
-    "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau."
+    "error": "Không thể gửi tin nhắn. Vui lòng thử lại sau.",
+    "listingTopic": "[Yêu cầu sửa / xóa thông tin đăng tải]"
   },
   "footer": {
     "nav": "Thông tin trang web",
@@ -90,5 +94,8 @@
     "title": "Không tìm thấy trang",
     "body": "Trang bạn đang tìm không tồn tại hoặc đã được chuyển đi.",
     "back": "Quay lại tìm kiếm"
+  },
+  "bot": {
+    "title": "Về trình thu thập dữ liệu của chúng tôi"
   }
 }

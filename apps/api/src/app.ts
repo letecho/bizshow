@@ -1,12 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { appCache } from '@fss/shared';
+import { appCache, loadStaleDays } from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
 import { requireAdmin, type AuthOptions } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 import { globalRateLimit, parseTrustProxy, type RateLimitOptions } from './middleware/rateLimit';
 import type { Mailer } from './mail/mailer';
+import type { BlocklistRepository } from './repositories/blocklistRepository';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
 import type { ServiceAdminRepository, ServiceRepository } from './repositories/serviceRepository';
@@ -21,6 +22,10 @@ export interface AppOptions {
   serviceRepository: ServiceRepository & ServiceAdminRepository;
   inquiryRepository: InquiryRepository;
   listingRequestRepository: ListingRequestRepository;
+  /** 収集・クロールのブロックリスト（F-116） */
+  blocklistRepository: BlocklistRepository;
+  /** 管理画面の「未確認の掲載」の基準日数（既定: env COLLECTOR_STALE_DAYS、未設定 180） */
+  staleDays?: number;
   mailer: Mailer;
   /** 管理 API の認証（AUTH_MODE=dev | cognito） */
   auth: AuthOptions;
@@ -92,6 +97,8 @@ export function createApp(options: AppOptions) {
       services: options.serviceRepository,
       listingRequests: options.listingRequestRepository,
       storage: options.storage,
+      blocklist: options.blocklistRepository,
+      staleDays: options.staleDays ?? loadStaleDays(process.env),
     }),
   );
 

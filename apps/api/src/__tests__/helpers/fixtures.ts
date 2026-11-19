@@ -2,6 +2,7 @@ import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } 
 import { createApp, type AppOptions } from '../../app';
 import { createLogMailer } from '../../mail/mailer';
 import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
+import { createInMemoryBlocklistRepository } from '../../repositories/blocklistRepository';
 import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
 import { createLocalStorage } from '../../storage/storage';
 import {
@@ -33,6 +34,8 @@ export function makeRecord(
     phone: null,
     websiteUrl: null,
     imageKey: null,
+    sources: [],
+    lastVerifiedAt: null,
     updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
     createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
     isPublished: true,
@@ -48,6 +51,7 @@ export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partia
     serviceRepository: createInMemoryServiceRepository(records),
     inquiryRepository: createInMemoryInquiryRepository(),
     listingRequestRepository: createInMemoryListingRequestRepository(),
+    blocklistRepository: createInMemoryBlocklistRepository(),
     mailer: createLogMailer(() => {}),
     auth: { mode: 'dev' },
     storage: createLocalStorage({ apiBaseUrl: 'http://localhost:4000', secret: 'test-secret' }),

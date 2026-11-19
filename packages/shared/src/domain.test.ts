@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  CrawlBlocklistInputSchema,
+  isBlockedEntity,
+  parseListingSources,
   PREFECTURES,
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
@@ -155,5 +158,53 @@ describe('UploadRequestSchema', () => {
   it('validates image keys', () => {
     expect(IMAGE_KEY_PATTERN.test('listings/123e4567-e89b-12d3-a456-426614174000.jpg')).toBe(true);
     expect(IMAGE_KEY_PATTERN.test('../etc/passwd')).toBe(false);
+  });
+});
+
+describe('parseListingSources (F-116)', () => {
+  it('keeps valid sources and drops malformed ones', () => {
+    expect(
+      parseListingSources([
+        { attribution: '出典: 医療情報ネット', url: 'https://example.go.jp/' },
+        { attribution: 'No URL' },
+        { attribution: '', url: null },
+        { attribution: 'Bad URL', url: 'javascript:alert(1)' },
+        'text',
+      ]),
+    ).toEqual([
+      { attribution: '出典: 医療情報ネット', url: 'https://example.go.jp/' },
+      { attribution: 'No URL', url: null },
+    ]);
+    expect(parseListingSources(null)).toEqual([]);
+    expect(parseListingSources({ attribution: 'x' })).toEqual([]);
+  });
+});
+
+describe('CrawlBlocklistInputSchema / isBlockedEntity (F-116)', () => {
+  it('normalizes domains and requires a domain or corporate number', () => {
+    expect(CrawlBlocklistInputSchema.parse({ domain: 'https://Example.COM/path', reason: 'optout' }).domain).toBe('example.com');
+    expect(CrawlBlocklistInputSchema.parse({ domain: 'xn--eckwd4c7c.xn--zckzah.', reason: 'robots' }).domain).toBe(
+      'xn--eckwd4c7c.xn--zckzah',
+    );
+    expect(CrawlBlocklistInputSchema.parse({ domain: '', corporateNumber: '1234567890123', reason: 'terms' })).toEqual({
+      corporateNumber: '1234567890123',
+      reason: 'terms',
+    });
+    expect(CrawlBlocklistInputSchema.safeParse({ domain: '', corporateNumber: ' ', reason: 'terms' }).success).toBe(false);
+    expect(CrawlBlocklistInputSchema.safeParse({ domain: '192.168.0.1', reason: 'terms' }).success).toBe(false);
+  });
+
+  it('matches the domain and its subdomains, and corporate numbers', () => {
+    const entries = [
+      { domain: 'example.com', corporateNumber: null },
+      { domain: null, corporateNumber: '1234567890123' },
+    ];
+    expect(isBlockedEntity(entries, { websiteUrl: 'https://example.com/' })).toBe(true);
+    expect(isBlockedEntity(entries, { websiteUrl: 'https://WWW.Example.com/a' })).toBe(true);
+    expect(isBlockedEntity(entries, { websiteUrl: 'https://notexample.com/' })).toBe(false);
+    expect(isBlockedEntity(entries, { websiteUrl: 'https://example.com.evil.test/' })).toBe(false);
+    expect(isBlockedEntity(entries, { corporateNumber: '1234567890123' })).toBe(true);
+    expect(isBlockedEntity(entries, { websiteUrl: 'not a url' })).toBe(false);
+    expect(isBlockedEntity(entries, {})).toBe(false);
   });
 });

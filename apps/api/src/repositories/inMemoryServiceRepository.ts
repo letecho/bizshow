@@ -72,10 +72,15 @@ export function createInMemoryServiceRepository(
       return detail;
     },
 
-    async adminList({ q, published, page, limit }) {
+    async adminList({ q, published, staleBefore, page, limit }) {
       const needle = q?.toLowerCase();
       const matched = records
         .filter((r) => published === undefined || r.isPublished === published)
+        .filter(
+          (r) =>
+            !staleBefore ||
+            (r.sources.length > 0 && (!r.lastVerifiedAt || new Date(r.lastVerifiedAt) < staleBefore)),
+        )
         .filter((r) => !needle || r.searchText.includes(needle) || r.slug.includes(needle))
         .sort(byUpdatedDesc);
       return { items: matched.slice((page - 1) * limit, page * limit).map(toAdminService), total: matched.length };
@@ -90,7 +95,14 @@ export function createInMemoryServiceRepository(
       assertSlugFree(input.slug);
       seq += 1;
       const now = new Date().toISOString();
-      const record: InMemoryServiceRecord = { ...fromInput(input), id: `new-${seq}`, createdAt: now, updatedAt: now };
+      const record: InMemoryServiceRecord = {
+        ...fromInput(input),
+        id: `new-${seq}`,
+        sources: [],
+        lastVerifiedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
       records.push(record);
       return toAdminService(record);
     },

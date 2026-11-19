@@ -61,6 +61,10 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
       return 'updated';
     },
 
+    async loadBlocklist() {
+      return prisma.crawlBlocklist.findMany({ select: { domain: true, corporateNumber: true } });
+    },
+
     async loadMatchTargets() {
       const [listings, candidates] = await Promise.all([
         prisma.serviceListing.findMany({

@@ -3,6 +3,7 @@ import type {
   CandidateMatchType,
   CollectionRunStatus,
   CollectorConfig,
+  CrawlBlockEntry,
   DataSourceKind,
   EntityEvidence,
   EntityType,
@@ -91,4 +92,6 @@ export interface CollectorRepository {
   upsertCandidate(input: CandidateInput): Promise<'created' | 'updated' | 'kept'>;
   /** 名寄せの相手（全掲載と pending の候補）を読む（F-114） */
   loadMatchTargets(): Promise<MatchTarget[]>;
+  /** ブロックリスト（F-116）。登録済みのドメイン・法人番号は候補を作らない */
+  loadBlocklist(): Promise<Pick<CrawlBlockEntry, 'domain' | 'corporateNumber'>[]>;
 }
