@@ -1,8 +1,6 @@
 import { Prisma, type DataSource, type PrismaClient, type ServiceCandidate } from '@prisma/client';
 import {
-  isSupportedLocale,
   parseListingSources,
-  toSupportedLocales,
   type AdminCandidate,
   type CandidateExtract,
   type EntityEvidence,
@@ -23,21 +21,6 @@ type Row = ServiceCandidate & { source: Pick<DataSource, 'name' | 'attribution'>
 
 const withSource = { source: { select: { name: true, attribution: true } } } as const;
 
-/** 廃止した言語（zh）のデータが残っていても出さない（F-120） */
-function supportedExtract(extracted: CandidateExtract): CandidateExtract {
-  const strip = <T extends Record<string, string | undefined> | undefined>(text: T): T => {
-    if (!text) return text;
-    return Object.fromEntries(Object.entries(text).filter(([k]) => isSupportedLocale(k))) as T;
-  };
-  return {
-    ...extracted,
-    supportedLanguages: toSupportedLocales(extracted.supportedLanguages ?? []),
-    name: strip(extracted.name),
-    description: strip(extracted.description),
-    address: strip(extracted.address),
-  };
-}
-
 function toAdminCandidate(row: Row): AdminCandidate {
   return {
     id: row.id,
@@ -46,9 +29,8 @@ function toAdminCandidate(row: Row): AdminCandidate {
     sourceUrl: row.sourceUrl,
     sourceRecordId: row.sourceRecordId,
     fetchedAt: row.fetchedAt.toISOString(),
-    extracted: supportedExtract(row.extracted as unknown as CandidateExtract),
-    // 廃止した言語（zh）の根拠は出さない（F-120）
-    languageEvidence: (row.languageEvidence as unknown as LanguageEvidence[]).filter((e) => isSupportedLocale(e.lang)),
+    extracted: row.extracted as unknown as CandidateExtract,
+    languageEvidence: row.languageEvidence as unknown as LanguageEvidence[],
     hasTargetLanguage: row.hasTargetLanguage,
     entityType: row.entityType,
     entityEvidence: row.entityEvidence as unknown as EntityEvidence[],

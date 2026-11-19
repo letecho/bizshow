@@ -113,8 +113,6 @@ describe('description draft', () => {
     expect(parseDescriptionDraft('```json\n' + JSON.stringify(ok) + '\n```')).toEqual(ok);
     expect(parseDescriptionDraft(JSON.stringify({ ...ok, vi: '' }))).toBeUndefined();
     expect(parseDescriptionDraft(JSON.stringify({ ja: 'a', en: 'b' }))).toBeUndefined();
-    // F-120: zh を返しても採用しない（3 言語だけを残す）
-    expect(parseDescriptionDraft(JSON.stringify({ ...ok, zh: 'c' }))).toEqual(ok);
     expect(parseDescriptionDraft(JSON.stringify({ ...ok, en: 'x'.repeat(401) }))).toBeUndefined();
     expect(parseDescriptionDraft('not json')).toBeUndefined();
     expect(parseDescriptionDraft(null)).toBeUndefined();

@@ -1,5 +1,5 @@
 import { Prisma, type ListingRequest, type PrismaClient } from '@prisma/client';
-import { toLocalizedText, toSupportedLocales, type ListingRequestInput } from '@fss/shared';
+import type { ListingRequestInput, LocalizedText } from '@fss/shared';
 import type { ListingRequestRecord, ListingRequestRepository } from './listingRequestRepository';
 
 export function toListingRequestRecord(row: ListingRequest): ListingRequestRecord {
@@ -7,12 +7,11 @@ export function toListingRequestRecord(row: ListingRequest): ListingRequestRecor
     ...row,
     category: row.category as ListingRequestInput['category'],
     prefecture: row.prefecture as ListingRequestInput['prefecture'],
-    // 廃止した言語（zh）のデータが DB に残っていても出さない（F-120）
-    supportedLanguages: toSupportedLocales(row.supportedLanguages) as ListingRequestInput['supportedLanguages'],
+    supportedLanguages: row.supportedLanguages as ListingRequestInput['supportedLanguages'],
     city: row.city ?? undefined,
-    name: toLocalizedText(row.name),
-    description: toLocalizedText(row.description),
-    address: row.address === null ? undefined : toLocalizedText(row.address),
+    name: row.name as LocalizedText,
+    description: row.description as LocalizedText,
+    address: (row.address as LocalizedText | null) ?? undefined,
     phone: row.phone ?? undefined,
     websiteUrl: row.websiteUrl ?? undefined,
   };

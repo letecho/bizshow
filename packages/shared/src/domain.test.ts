@@ -208,12 +208,3 @@ describe('CrawlBlocklistInputSchema / isBlockedEntity (F-116)', () => {
     expect(isBlockedEntity(entries, {})).toBe(false);
   });
 });
-
-describe('toSupportedLocales / toLocalizedText (F-120)', () => {
-  it('drops the removed zh language from data stored in the DB', async () => {
-    const { toSupportedLocales, toLocalizedText } = await import('./domain');
-    expect(toSupportedLocales(['ja', 'zh', 'vi', 'en'])).toEqual(['ja', 'vi', 'en']);
-    expect(toLocalizedText({ en: 'Clinic', ja: 'クリニック', zh: '诊所' })).toEqual({ en: 'Clinic', ja: 'クリニック' });
-    expect(toLocalizedText({ ja: 'のみ', zh: '仅' })).toEqual({ en: '', ja: 'のみ' });
-  });
-});

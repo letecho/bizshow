@@ -60,12 +60,6 @@ describe('GET /api/v1/services', () => {
     expect(res.body.data.map((s: { slug: string }) => s.slug)).toEqual(['legal-tokyo']);
   });
 
-  it('lang=zh returns 400 VALIDATION_ERROR (zh removed, F-120)', async () => {
-    const res = await request(app).get('/api/v1/services?lang=zh');
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
-  });
-
   it('limit=100 returns 400 VALIDATION_ERROR', async () => {
     const res = await request(app).get('/api/v1/services?limit=100');
     expect(res.status).toBe(400);

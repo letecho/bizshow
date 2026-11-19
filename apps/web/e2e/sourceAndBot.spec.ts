@@ -18,15 +18,6 @@ for (const [locale, heading] of Object.entries(BOT_HEADINGS)) {
   });
 }
 
-// F-120: 廃止した中国語のページは英語ページへ恒久リダイレクト
-test('/zh pages redirect to English', async ({ page }) => {
-  const res = await page.goto('/zh/bot');
-  expect(res?.status()).toBe(200);
-  await expect(page).toHaveURL(/\/en\/bot$/);
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.locator('a[hreflang="zh"], link[hreflang="zh"]')).toHaveCount(0);
-});
-
 test('detail → request a correction prefills the contact form with the subject and slug', async ({ page }) => {
   await page.goto('/ja?category=legal');
   await page.locator('article').first().getByRole('link').first().click();

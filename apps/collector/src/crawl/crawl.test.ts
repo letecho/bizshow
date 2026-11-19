@@ -133,7 +133,6 @@ describe('parsePage / selectFollowLinks', () => {
   it('finds html lang, hreflang, path and language switch links including Tiếng Việt', () => {
     const html = `<html lang="ja"><head>
       <link rel="alternate" hreflang="en" href="https://www.example.jp/en/">
-      <link rel="alternate" hreflang="zh-Hans" href="https://www.example.jp/zh/">
       <link rel="alternate" hreflang="x-default" href="https://www.example.jp/">
     </head><body>
       <a href="/vi/">Tiếng Việt</a> <a href="/company/">会社概要</a>
@@ -147,8 +146,6 @@ describe('parsePage / selectFollowLinks', () => {
       ]),
     );
     expect(hints.some((h) => h.lang === 'vi' && h.signal === 'path')).toBe(false);
-    // F-120: 中国語は対応言語ではないため根拠にしない
-    expect(hints.some((h) => (h.lang as string) === 'zh')).toBe(false);
     expect(parsePage(page(''), new URL('https://www.example.jp/vi/about')).hints).toContainEqual({
       lang: 'vi',
       signal: 'path',

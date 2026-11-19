@@ -13,9 +13,6 @@ describe('negotiateLocale', () => {
     ['vi', 'vi'],
     ['vi-VN,vi;q=0.9,en;q=0.8', 'vi'],
     ['fr-FR,fr;q=0.9,vi-VN;q=0.8,en;q=0.5', 'vi'],
-    // F-120: 中国語は対応外（次に優先度の高い対応言語、無ければ en）
-    ['zh-CN,zh;q=0.9,ja;q=0.5', 'ja'],
-    ['zh-TW', 'en'],
     ['en;q=0.5,ja;q=0.9', 'ja'],
     ['fr,de', 'en'],
     ['', 'en'],

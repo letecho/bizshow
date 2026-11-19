@@ -17,18 +17,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 廃止した中国語（F-120）: /zh・/zh/... は同じパスの英語ページへ恒久リダイレクト（クエリは保持）
-  if (pathname === '/zh' || pathname.startsWith('/zh/')) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/en${pathname.slice(3)}`;
-    return NextResponse.redirect(url, 308);
-  }
-
   // `/` を Accept-Language の最適一致（なければ en）へリダイレクト
   const locale = negotiateLocale(request.headers.get('accept-language'));
   return NextResponse.redirect(new URL(`/${locale}`, request.url));
 }
 
 export const config = {
-  matcher: ['/', '/admin', '/admin/:path*', '/zh', '/zh/:path*'],
+  matcher: ['/', '/admin', '/admin/:path*'],
 };
