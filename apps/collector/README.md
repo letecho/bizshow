@@ -43,6 +43,26 @@ pnpm --filter collector collect --source mhlw-medical --file /path/to/download.z
   - 照会に失敗しても収集は続けます（`errorSample` に記録）。アプリケーション ID はエラーに出しません
 - `score`（0〜100、重みは `packages/shared` の `CANDIDATE_SCORE_WEIGHTS`）: 情報源の信頼度（open_data・partner 40 / api 30 / crawl 20）＋必須項目（名称・住所・電話・都道府県）の充足 最大 30 ＋対応言語の根拠（対象言語 20 / それ以外の外国語のみ 10）＋別の情報源の候補と一致 10
 
+## 公式サイトのクロールと対応言語の根拠（F-115）
+
+```bash
+pnpm --filter collector crawl          # COLLECTOR_CRAWL_ENABLED=true のときだけ動く（既定 false では何も取得しない）
+```
+
+- 対象: `pending` の候補のうち `websiteUrl` があるもの。対象言語（`COLLECTOR_TARGET_LANGUAGES`）の根拠が無い → サイト未確認 → 古い順に、1 回の実行で `COLLECTOR_CRAWL_MAX_SITES_PER_RUN` サイトまで（超過分は次回）。前回の確認から `COLLECTOR_RECRAWL_DAYS` 以内の候補は対象外
+- 1 サイトの取得: `robots.txt` → トップ → 言語切替・会社概要・アクセス・お問い合わせのリンク（同一サイト・クエリなし・ログイン/フォーム/検索/ファイル以外）で合計 `COLLECTOR_CRAWL_MAX_PAGES` ページまで
+- 守ること（`src/crawl/`）
+  - `robots.txt` の Disallow / Allow と Crawl-delay（取得失敗: 4xx=許可、5xx・通信エラー=そのサイトを中止）
+  - 同一ホストは逐次（同時 1）、間隔は max(`COLLECTOR_CRAWL_INTERVAL_SEC`, Crawl-delay)。UA は `COLLECTOR_USER_AGENT`
+  - 429 / 503 でそのホストを 24 時間停止（`COLLECTOR_RAW_DIR/crawl/state.json` に記録）
+  - 同じ URL は `COLLECTOR_RECRAWL_DAYS` 以内に再取得しない。過ぎたら ETag / Last-Modified で条件付き取得
+  - http(s) のみ、リダイレクトは同一サイト内で 3 回まで（各ホップで robots.txt を確認）、本文 2MB まで、text/html のみ
+  - SSRF 対策: プライベート・ループバック・リンクローカル（169.254.0.0/16）・CGNAT・IPv6 ULA / リンクローカル等に解決されるホストは**接続時に**拒否（DNS の再バインド対策）
+  - ブロックリスト（F-116）のドメインは取得しない
+- 判定: `<html lang>`・`hreflang`・`/en/` `/zh/` `/vi/` 等のパス・言語切替のリンク（「Tiếng Việt」「Vietnamese」「ベトナム語」等）・本文（ベトナム語・日本語の簡易判定）から、`languageEvidence` に `kind=website`（`value`=URL、`signal`=手がかり、`checkedAt`=確認日）を記録し、`hasTargetLanguage` と score の言語の点を更新します
+- サイトだけが根拠の言語は、管理画面の候補詳細に「要確認」と表示します。候補の掲載内容（`supportedLanguages` など）は変えません
+- 生 HTML は `COLLECTOR_RAW_DIR/crawl/html/<日付>/` に保存し、`COLLECTOR_RAW_RETENTION_DAYS` を過ぎたら実行時に削除します。文章は掲載に使いません
+
 ## 何を保存しないか
 
 | 対象外 | 設定 | 記録 |

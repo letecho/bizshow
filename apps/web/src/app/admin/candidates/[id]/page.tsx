@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import type {
-  AdminCandidateDetail,
-  CandidateDiffField,
+import {
+  websiteOnlyLanguages,
+  type AdminCandidateDetail,
+  type CandidateDiffField,
 } from "@fss/shared/collector";
 import { AdminHeader } from "../../../../components/admin/AdminHeader";
 import { CandidateReviewForm } from "../../../../components/admin/CandidateReviewForm";
@@ -128,13 +129,24 @@ export default async function CandidateDetailPage({ params }: Props) {
               {c.languageEvidence.length === 0 ? (
                 "—"
               ) : (
-                <ul>
-                  {c.languageEvidence.map((e, i) => (
-                    <li key={i}>
-                      {e.lang}: {e.kind} = {e.value}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul>
+                    {c.languageEvidence.map((e, i) => (
+                      <li key={i}>
+                        {e.lang}: {e.kind}
+                        {e.signal ? ` (${e.signal})` : ""} = {e.value}
+                        {e.checkedAt ? `（確認日 ${e.checkedAt.slice(0, 10)}）` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  {websiteOnlyLanguages(c.languageEvidence).length > 0 && (
+                    <p>
+                      要確認: 公式サイトだけが根拠の言語{" "}
+                      {websiteOnlyLanguages(c.languageEvidence).join(", ")}
+                      （収集元のデータに根拠が無いため、サイトで対応を確認してから対応言語に設定してください）
+                    </p>
+                  )}
+                </>
               )}
             </dd>
           </dl>

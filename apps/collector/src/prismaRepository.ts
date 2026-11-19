@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
-import type { CandidateExtract, LocalizedText } from '@fss/shared';
+import type { CandidateExtract, LanguageEvidence, LocalizedText } from '@fss/shared';
 import type { CollectorRepository } from './types';
 
 const json = (v: unknown) => v as Prisma.InputJsonValue;
@@ -63,6 +63,37 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
 
     async loadBlocklist() {
       return prisma.crawlBlocklist.findMany({ select: { domain: true, corporateNumber: true } });
+    },
+
+    async loadCrawlTargets() {
+      const rows = await prisma.serviceCandidate.findMany({
+        where: { status: 'pending' },
+        select: { id: true, extracted: true, languageEvidence: true, hasTargetLanguage: true, score: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      return rows.flatMap((r) => {
+        const websiteUrl = (r.extracted as { websiteUrl?: unknown } | null)?.websiteUrl;
+        if (typeof websiteUrl !== 'string' || !websiteUrl) return [];
+        return [
+          {
+            id: r.id,
+            websiteUrl,
+            languageEvidence: (r.languageEvidence ?? []) as unknown as LanguageEvidence[],
+            hasTargetLanguage: r.hasTargetLanguage,
+            score: r.score,
+            createdAt: r.createdAt,
+          },
+        ];
+      });
+    },
+
+    async updateCandidateLanguageEvidence(id, update) {
+      // レビュー済みの候補は変えない
+      const { count } = await prisma.serviceCandidate.updateMany({
+        where: { id, status: 'pending' },
+        data: { languageEvidence: json(update.languageEvidence), hasTargetLanguage: update.hasTargetLanguage, score: update.score },
+      });
+      return count > 0;
     },
 
     async loadMatchTargets() {

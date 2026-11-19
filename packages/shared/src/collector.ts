@@ -402,6 +402,24 @@ export interface LanguageEvidence {
   kind: string;
   /** 根拠の値（列名・URL など。転載にならない短い値） */
   value: string;
+  /** kind=website（F-115）: 判定に使った手がかり（html_lang / hreflang / path / switch_link / body_text） */
+  signal?: WebsiteLanguageSignal;
+  /** kind=website（F-115）: 確認日（ISO 8601） */
+  checkedAt?: string;
+}
+
+/** 公式サイトのクロールで対応言語を判定した手がかり（F-115） */
+export const WEBSITE_LANGUAGE_SIGNALS = ['html_lang', 'hreflang', 'path', 'switch_link', 'body_text'] as const;
+export type WebsiteLanguageSignal = (typeof WEBSITE_LANGUAGE_SIGNALS)[number];
+
+/**
+ * 公式サイトだけが根拠の言語（F-115）。収集元のデータに根拠が無く、管理者の確認が必要。
+ * 例: open_data で vi の根拠が無く、website で vi が見つかった → ['vi']
+ */
+export function websiteOnlyLanguages(evidence: readonly LanguageEvidence[]): SupportedLocale[] {
+  const fromWebsite = new Set(evidence.filter((e) => e.kind === 'website').map((e) => e.lang));
+  const fromOther = new Set(evidence.filter((e) => e.kind !== 'website').map((e) => e.lang));
+  return SUPPORTED_LOCALES.filter((l) => fromWebsite.has(l) && !fromOther.has(l));
 }
 
 /** 対象言語の根拠があるか */
@@ -491,6 +509,14 @@ export interface ScoreInput {
   closedCorporation?: boolean;
 }
 
+/** スコアのうち対応言語の根拠の点（対象言語 20 / それ以外の外国語のみ 10 / なし 0） */
+export function languageEvidenceScore(evidence: readonly LanguageEvidence[], targetLanguages: readonly SupportedLocale[]): number {
+  const w = CANDIDATE_SCORE_WEIGHTS;
+  const foreign = evidence.filter((l) => l.lang !== 'ja');
+  if (foreign.some((l) => targetLanguages.includes(l.lang))) return w.targetLanguage;
+  return foreign.length > 0 ? w.otherForeignLanguage : 0;
+}
+
 /** 候補の信頼度（0〜100）。閉鎖法人は 0 */
 export function scoreCandidate(input: ScoreInput): number {
   if (input.closedCorporation) return 0;
@@ -499,12 +525,7 @@ export function scoreCandidate(input: ScoreInput): number {
   const filled = [Boolean(e.name?.ja || e.name?.en), Boolean(e.address?.ja || e.address?.en), Boolean(e.phone), Boolean(e.prefecture)].filter(
     Boolean,
   ).length;
-  const foreign = input.languageEvidence.filter((l) => l.lang !== 'ja');
-  const language = foreign.some((l) => input.targetLanguages.includes(l.lang))
-    ? w.targetLanguage
-    : foreign.length > 0
-      ? w.otherForeignLanguage
-      : 0;
+  const language = languageEvidenceScore(input.languageEvidence, input.targetLanguages);
   const score =
     w.source[input.sourceKind] + Math.round((w.requiredFields * filled) / 4) + language + (input.matchedOtherSource ? w.multiSource : 0);
   return Math.max(0, Math.min(100, score));
