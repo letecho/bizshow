@@ -51,6 +51,24 @@ export function createMemoryRepository(
     async loadBlocklist() {
       return blocklist;
     },
+    async loadCrawlTargets() {
+      return [...candidates.entries()]
+        .filter(([, c]) => c.status === 'pending' && c.extracted.websiteUrl)
+        .map(([key, c]) => ({
+          id: key,
+          websiteUrl: c.extracted.websiteUrl!,
+          languageEvidence: c.languageEvidence,
+          hasTargetLanguage: c.hasTargetLanguage,
+          score: c.score,
+          createdAt: c.fetchedAt,
+        }));
+    },
+    async updateCandidateLanguageEvidence(id, update) {
+      const c = candidates.get(id);
+      if (!c || c.status !== 'pending') return false;
+      candidates.set(id, { ...c, ...update });
+      return true;
+    },
     async loadMatchTargets() {
       const pending = [...candidates.values()].filter((c) => c.status === 'pending');
       return [

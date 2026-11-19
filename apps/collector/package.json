@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "collect": "tsx --env-file-if-exists=../../.env src/cli.ts",
+    "crawl": "tsx --env-file-if-exists=../../.env src/crawl/cli.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"

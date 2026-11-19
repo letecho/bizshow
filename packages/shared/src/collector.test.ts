@@ -6,6 +6,8 @@ import {
   SERVICE_CATEGORIES,
   classifyEntity,
   hasTargetLanguageEvidence,
+  languageEvidenceScore,
+  websiteOnlyLanguages,
   isEntityInScope,
   loadCollectorConfig,
   loadStaleDays,
@@ -200,6 +202,23 @@ describe('CandidateExtractSchema (F-111)', () => {
     expect(hasTargetLanguageEvidence([{ lang: 'vi', kind: 'source_field', value: 'ベトナム語' }], ['vi'])).toBe(true);
     expect(hasTargetLanguageEvidence([{ lang: 'en', kind: 'source_field', value: '英語' }], ['vi'])).toBe(false);
     expect(hasTargetLanguageEvidence([], ['vi'])).toBe(false);
+  });
+
+  it('lists languages whose only evidence is the official website (F-115)', () => {
+    expect(
+      websiteOnlyLanguages([
+        { lang: 'en', kind: 'open_data', value: '英語' },
+        { lang: 'en', kind: 'website', value: 'https://a.example/en/', signal: 'hreflang' },
+        { lang: 'vi', kind: 'website', value: 'https://a.example/vi/', signal: 'switch_link' },
+      ]),
+    ).toEqual(['vi']);
+    expect(websiteOnlyLanguages([{ lang: 'en', kind: 'open_data', value: '英語' }])).toEqual([]);
+  });
+
+  it('scores language evidence (target 20 / other foreign 10 / none 0)', () => {
+    expect(languageEvidenceScore([{ lang: 'vi', kind: 'website', value: 'u' }], ['vi'])).toBe(20);
+    expect(languageEvidenceScore([{ lang: 'en', kind: 'website', value: 'u' }], ['vi'])).toBe(10);
+    expect(languageEvidenceScore([{ lang: 'ja', kind: 'website', value: 'u' }], ['vi'])).toBe(0);
   });
 });
 

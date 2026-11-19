@@ -94,4 +94,21 @@ export interface CollectorRepository {
   loadMatchTargets(): Promise<MatchTarget[]>;
   /** ブロックリスト（F-116）。登録済みのドメイン・法人番号は候補を作らない */
   loadBlocklist(): Promise<Pick<CrawlBlockEntry, 'domain' | 'corporateNumber'>[]>;
+  /** クロールの対象（pending で websiteUrl がある候補）を読む（F-115） */
+  loadCrawlTargets(): Promise<CrawlTarget[]>;
+  /** クロールで得た対応言語の根拠を pending の候補に記録する。pending でなければ false（F-115） */
+  updateCandidateLanguageEvidence(
+    id: string,
+    update: { languageEvidence: LanguageEvidence[]; hasTargetLanguage: boolean; score: number },
+  ): Promise<boolean>;
+}
+
+/** クロールの対象の候補（F-115） */
+export interface CrawlTarget {
+  id: string;
+  websiteUrl: string;
+  languageEvidence: LanguageEvidence[];
+  hasTargetLanguage: boolean;
+  score: number;
+  createdAt: Date;
 }
