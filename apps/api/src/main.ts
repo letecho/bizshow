@@ -8,6 +8,7 @@ import { createPrismaBlocklistRepository } from './repositories/prismaBlocklistR
 import { createPrismaLlmUsageStore } from './repositories/prismaLlmUsageStore';
 import { createPrismaInquiryRepository } from './repositories/prismaInquiryRepository';
 import { createPrismaListingRequestRepository } from './repositories/prismaListingRequestRepository';
+import { createPrismaOutreachRepository } from './repositories/prismaOutreachRepository';
 import { createPrismaServiceRepository } from './repositories/prismaServiceRepository';
 import { createStorageFromEnv } from './storage/storage';
 
@@ -32,6 +33,7 @@ async function main() {
     blocklistRepository: createPrismaBlocklistRepository(prisma),
     candidateRepository: createPrismaCandidateRepository(prisma),
     llm,
+    outreachRepository: createPrismaOutreachRepository(prisma),
     mailer: createMailerFromEnv(),
     auth: await createAuthOptionsFromEnv(),
     storage,

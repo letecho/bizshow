@@ -1,7 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { appCache, loadEntityScope, loadStaleDays, type BudgetedLlm, type EntityScope } from '@fss/shared';
+import {
+  appCache,
+  loadEntityScope,
+  loadOutreachConfig,
+  loadStaleDays,
+  type BudgetedLlm,
+  type EntityScope,
+  type OutreachConfig,
+} from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
 import { requireAdmin, type AuthOptions } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/errors';
@@ -11,11 +19,13 @@ import type { BlocklistRepository } from './repositories/blocklistRepository';
 import type { CandidateRepository } from './repositories/candidateRepository';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
+import type { OutreachRepository } from './repositories/outreachRepository';
 import type { ServiceAdminRepository, ServiceRepository } from './repositories/serviceRepository';
 import { adminRouter } from './routes/admin';
 import { inquiriesRouter } from './routes/inquiries';
 import { listingRequestsRouter } from './routes/listingRequests';
 import { localUploadsRouter } from './routes/localUploads';
+import { outreachRouter } from './routes/outreach';
 import { servicesRouter } from './routes/services';
 import type { LocalStorage, Storage } from './storage/storage';
 
@@ -33,6 +43,10 @@ export interface AppOptions {
   staleDays?: number;
   /** 候補の説明文の下書きに使う LLM（F-117）。未指定なら下書きは使えない（main.ts が env から作る） */
   llm?: BudgetedLlm;
+  /** 掲載案内の送信履歴・受信拒否（F-118） */
+  outreachRepository: OutreachRepository;
+  /** 掲載案内の設定（既定: env OUTREACH_*。有効なのに送信者情報などが欠けていれば起動エラー） */
+  outreachConfig?: OutreachConfig;
   mailer: Mailer;
   /** 管理 API の認証（AUTH_MODE=dev | cognito） */
   auth: AuthOptions;
@@ -52,6 +66,7 @@ export interface AppOptions {
 
 export function createApp(options: AppOptions) {
   const app = express();
+  const outreachConfig = options.outreachConfig ?? loadOutreachConfig(process.env);
   const log = options.log ?? (process.env.NODE_ENV === 'test' ? () => {} : console.log);
 
   // Cloudflare → ALB 経由でもクライアント IP（X-Forwarded-For）でレート制限できるようにする
@@ -96,6 +111,10 @@ export function createApp(options: AppOptions) {
   );
 
   app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository));
+  app.use(
+    '/api/v1/outreach',
+    outreachRouter({ config: outreachConfig, outreach: options.outreachRepository, candidates: options.candidateRepository }),
+  );
 
   app.use(
     '/api/v1/admin',
@@ -109,6 +128,9 @@ export function createApp(options: AppOptions) {
       candidates: options.candidateRepository,
       entityScope: options.entityScope ?? loadEntityScope(process.env),
       llm: options.llm,
+      outreach: options.outreachRepository,
+      outreachConfig,
+      mailer: options.mailer,
     }),
   );
 

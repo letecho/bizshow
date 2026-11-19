@@ -1,4 +1,5 @@
 import type { ServiceDetail, ServiceSummary } from '@fss/shared/domain';
+import type { ListingInvitePrefill } from '@fss/shared/outreach';
 
 /** ブラウザから呼ぶ API の URL（ビルド時に埋め込まれる） */
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -46,4 +47,9 @@ export function searchServices(query: string) {
 
 export function getService(slug: string) {
   return getJson<{ data: ServiceDetail }>(`/api/v1/services/${encodeURIComponent(slug)}`);
+}
+
+/** 掲載案内のリンク（F-118）の事前入力。無効・期限切れは ok:false */
+export function getListingInvite(token: string) {
+  return getJson<{ data: ListingInvitePrefill }>(`/api/v1/outreach/invites/${encodeURIComponent(token)}`);
 }

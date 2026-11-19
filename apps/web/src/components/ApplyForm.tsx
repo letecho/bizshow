@@ -8,6 +8,7 @@ import {
   SERVICE_CATEGORIES,
   type SupportedLocale,
 } from '@fss/shared/domain';
+import type { ListingInvitePrefill } from '@fss/shared/outreach';
 import type { Dictionary } from '../i18n/dictionaries';
 import { localeNames, locales } from '../i18n/config';
 import { prefectureName } from '../i18n/labels';
@@ -28,12 +29,14 @@ function LocalizedFields({
   required,
   multiline,
   invalid,
+  initial,
 }: {
   field: 'name' | 'description' | 'address';
   legend: string;
   required?: boolean;
   multiline?: boolean;
   invalid: string[];
+  initial?: Partial<Record<SupportedLocale, string>>;
 }) {
   return (
     <fieldset className={styles.fieldset}>
@@ -48,6 +51,7 @@ function LocalizedFields({
             <textarea
               name={`${field}_${l}`}
               rows={4}
+              defaultValue={initial?.[l]}
               required={required && l === 'en'}
               maxLength={LISTING_TEXT_MAX[field]}
               {...invalidProps(invalid, `${field}_${l}`, ERROR_ID)}
@@ -55,6 +59,7 @@ function LocalizedFields({
           ) : (
             <input
               name={`${field}_${l}`}
+              defaultValue={initial?.[l]}
               required={required && l === 'en'}
               maxLength={LISTING_TEXT_MAX[field]}
               {...invalidProps(invalid, `${field}_${l}`, ERROR_ID)}
@@ -66,8 +71,19 @@ function LocalizedFields({
   );
 }
 
-/** 事業者の掲載申請フォーム。shared スキーマで事前検証し API へ送信する */
-export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dictionary }) {
+/**
+ * 事業者の掲載申請フォーム。shared スキーマで事前検証し API へ送信する。
+ * initial: 掲載案内のリンク（F-118）から来たときの事前入力
+ */
+export function ApplyForm({
+  locale,
+  dict,
+  initial,
+}: {
+  locale: SupportedLocale;
+  dict: Dictionary;
+  initial?: ListingInvitePrefill;
+}) {
   const t = dict.apply;
   const [{ status, invalid }, setState] = useState<FormState>({ status: 'idle', invalid: [] });
   const setStatus = (next: Status) => setState({ status: next, invalid: [] });
@@ -136,7 +152,7 @@ export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dic
       <p className={styles.hint}>{t.requiredHint}</p>
       <label className={styles.field}>
         <span>{dict.search.category} *</span>
-        <select name="category" required defaultValue="" {...err('category')}>
+        <select name="category" required defaultValue={initial?.category ?? ''} {...err('category')}>
           <option value="" disabled>
             —
           </option>
@@ -149,7 +165,7 @@ export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dic
       </label>
       <label className={styles.field}>
         <span>{dict.search.prefecture} *</span>
-        <select name="prefecture" required defaultValue="" {...err('prefecture')}>
+        <select name="prefecture" required defaultValue={initial?.prefecture ?? ''} {...err('prefecture')}>
           <option value="" disabled>
             —
           </option>
@@ -162,30 +178,36 @@ export function ApplyForm({ locale, dict }: { locale: SupportedLocale; dict: Dic
       </label>
       <label className={styles.field}>
         <span>{t.city}</span>
-        <input name="city" maxLength={LISTING_TEXT_MAX.city} {...err('city')} />
+        <input name="city" defaultValue={initial?.city} maxLength={LISTING_TEXT_MAX.city} {...err('city')} />
       </label>
       <fieldset className={styles.fieldset}>
         <legend>{dict.detail.languages} *</legend>
         <div className={styles.checks}>
           {locales.map((l) => (
             <label key={l}>
-              <input type="checkbox" name="supportedLanguages" value={l} {...err('supportedLanguages')} /> {localeNames[l]}
+              <input
+                type="checkbox"
+                name="supportedLanguages"
+                value={l}
+                defaultChecked={initial?.supportedLanguages.includes(l)}
+                {...err('supportedLanguages')} /> {localeNames[l]}
             </label>
           ))}
         </div>
       </fieldset>
-      <LocalizedFields field="name" legend={t.serviceName} required invalid={invalid} />
+      <LocalizedFields field="name" legend={t.serviceName} required invalid={invalid} initial={initial?.name} />
       <LocalizedFields field="description" legend={t.description} required multiline invalid={invalid} />
-      <LocalizedFields field="address" legend={dict.detail.address} invalid={invalid} />
+      <LocalizedFields field="address" legend={dict.detail.address} invalid={invalid} initial={initial?.address} />
       <label className={styles.field}>
         <span>{dict.detail.phone}</span>
-        <input name="phone" type="tel" maxLength={LISTING_TEXT_MAX.phone} {...err('phone')} />
+        <input name="phone" type="tel" defaultValue={initial?.phone} maxLength={LISTING_TEXT_MAX.phone} {...err('phone')} />
       </label>
       <label className={styles.field}>
         <span>{dict.detail.website}</span>
         <input
           name="websiteUrl"
           type="url"
+          defaultValue={initial?.websiteUrl}
           maxLength={LISTING_TEXT_MAX.websiteUrl}
           placeholder="https://"
           {...err('websiteUrl')}
