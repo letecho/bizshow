@@ -30,7 +30,8 @@ export class SlugConflictError extends Error {
 
 /** 管理画面用（非公開を含む）。不存在は null、slug 重複は SlugConflictError */
 export interface ServiceAdminRepository {
-  adminList(query: AdminServiceListQuery): Promise<{ items: AdminService[]; total: number }>;
+  /** staleBefore: 収集した掲載のうち、最終確認日が無いかこの日時より前のものに絞る（F-116） */
+  adminList(query: AdminServiceListQuery & { staleBefore?: Date }): Promise<{ items: AdminService[]; total: number }>;
   adminFindById(id: string): Promise<AdminService | null>;
   create(input: AdminServiceInput): Promise<AdminService>;
   update(id: string, input: AdminServiceInput): Promise<AdminService | null>;

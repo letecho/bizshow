@@ -130,8 +130,32 @@ export interface ServiceDetail extends ServiceSummary {
   websiteUrl: string | null;
   /** 掲載画像（CDN 経由の URL）。未設定は null */
   imageUrl: string | null;
+  /** 出典（収集元の出典表示文と URL、F-116）。手入力の掲載は空 */
+  sources: ListingSource[];
+  /** 掲載内容を最後に確認した日時（ISO 8601、F-116）。未確認は null */
+  lastVerifiedAt: string | null;
   /** ISO 8601 */
   updatedAt: string;
+}
+
+// ---- Listing source (F-116) --------------------------------------------------
+
+export const LISTING_SOURCE_ATTRIBUTION_MAX = 300;
+
+/** 掲載の出典（ServiceListing.sources の要素）。DataSource.attribution と候補の sourceUrl から作る */
+export const ListingSourceSchema = z.object({
+  attribution: z.string().trim().min(1).max(LISTING_SOURCE_ATTRIBUTION_MAX),
+  url: z.url({ protocol: /^https?$/ }).max(500).nullable().default(null),
+});
+export type ListingSource = z.infer<typeof ListingSourceSchema>;
+
+/** DB の Json 値を出典の配列に変換する。形式が不正な要素は表示しない */
+export function parseListingSources(value: unknown): ListingSource[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const parsed = ListingSourceSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 // ---- Inquiry ----------------------------------------------------------------
@@ -253,6 +277,8 @@ export const AdminServiceListQuerySchema = z.object({
   q: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
   /** true = 公開のみ / false = 非公開のみ / 未指定 = すべて */
   published: booleanQuery,
+  /** true = 収集した掲載のうち COLLECTOR_STALE_DAYS を過ぎても確認できていないもの（F-116） */
+  stale: booleanQuery,
   page: pageQuery,
   limit: limitQuery,
 });
@@ -288,4 +314,80 @@ export interface ListingRequest extends ListingRequestInput {
   /** ISO 8601 */
   createdAt: string;
   updatedAt: string;
+}
+
+// ---- Crawl blocklist (F-116) -------------------------------------------------
+
+/** 登録理由: 事業者からの停止依頼 / 利用規約で禁止 / robots.txt で拒否 */
+export const CRAWL_BLOCK_REASONS = ['optout', 'terms', 'robots'] as const;
+export type CrawlBlockReason = (typeof CRAWL_BLOCK_REASONS)[number];
+
+export const CRAWL_BLOCK_NOTE_MAX = 500;
+
+const HOSTNAME_PATTERN = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/;
+
+/** ドメインの正規化: 前後の空白・末尾のドットを除き小文字に。URL が貼られたらホスト名だけを使う */
+export function normalizeDomain(value: string): string {
+  let host = value.trim().toLowerCase();
+  if (host.includes('://')) {
+    try {
+      host = new URL(host).hostname;
+    } catch {
+      return host;
+    }
+  }
+  return host.replace(/\.$/, '');
+}
+
+const optionalTrimmed = (v: unknown) => (typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim()) : v);
+
+export const CrawlBlocklistInputSchema = z
+  .object({
+    /** このドメインとサブドメインを対象にする（例: example.com → www.example.com も含む） */
+    domain: z.preprocess(
+      (v) => (typeof v === 'string' ? optionalTrimmed(normalizeDomain(v)) : v),
+      z.string().regex(HOSTNAME_PATTERN).optional(),
+    ),
+    corporateNumber: z.preprocess(optionalTrimmed, z.string().regex(/^\d{13}$/).optional()),
+    reason: z.enum(CRAWL_BLOCK_REASONS),
+    note: z.preprocess(optionalTrimmed, z.string().max(CRAWL_BLOCK_NOTE_MAX).optional()),
+  })
+  .refine((v) => v.domain !== undefined || v.corporateNumber !== undefined, {
+    message: 'domain or corporateNumber is required',
+    path: ['domain'],
+  });
+export type CrawlBlocklistInput = z.infer<typeof CrawlBlocklistInputSchema>;
+
+/** 管理画面用のブロックリストの行 */
+export interface CrawlBlockEntry {
+  id: string;
+  domain: string | null;
+  corporateNumber: string | null;
+  reason: CrawlBlockReason;
+  note: string | null;
+  /** ISO 8601 */
+  createdAt: string;
+}
+
+/** ホスト名がブロックリストのドメイン（またはそのサブドメイン）に当たるか */
+export function isDomainBlocked(hostname: string, blockedDomains: readonly string[]): boolean {
+  const host = normalizeDomain(hostname);
+  return blockedDomains.some((d) => host === d || host.endsWith(`.${d}`));
+}
+
+/** 事業者（Web サイトのドメイン・法人番号）がブロックリストに当たるか。収集で候補を作らない判定に使う */
+export function isBlockedEntity(
+  entries: readonly Pick<CrawlBlockEntry, 'domain' | 'corporateNumber'>[],
+  target: { websiteUrl?: string | null; corporateNumber?: string | null },
+): boolean {
+  if (target.corporateNumber && entries.some((e) => e.corporateNumber === target.corporateNumber)) return true;
+  if (!target.websiteUrl) return false;
+  let host: string;
+  try {
+    host = new URL(target.websiteUrl).hostname;
+  } catch {
+    return false;
+  }
+  const domains = entries.map((e) => e.domain).filter((d): d is string => Boolean(d));
+  return isDomainBlocked(host, domains);
 }

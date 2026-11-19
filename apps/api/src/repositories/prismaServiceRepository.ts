@@ -9,6 +9,7 @@ import type {
   ServiceSummary,
   SupportedLocale,
 } from '@fss/shared';
+import { parseListingSources } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
 import { imageUrlFor } from '../storage/storage';
 import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
@@ -33,6 +34,8 @@ export function toServiceDetail(row: ServiceListing): ServiceDetail {
     phone: row.phone,
     websiteUrl: row.websiteUrl,
     imageUrl: imageUrlFor(row.imageKey),
+    sources: parseListingSources(row.sources),
+    lastVerifiedAt: row.lastVerifiedAt?.toISOString() ?? null,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -100,9 +103,14 @@ export function createPrismaServiceRepository(prisma: PrismaClient): ServiceRepo
       return row ? toServiceDetail(row) : null;
     },
 
-    async adminList({ q, published, page, limit }) {
+    async adminList({ q, published, staleBefore, page, limit }) {
       const where: Prisma.ServiceListingWhereInput = {
         isPublished: published,
+        // 収集した掲載（出典あり）のうち、確認日が無いか基準日より前のもの
+        ...(staleBefore && {
+          sources: { not: Prisma.DbNull },
+          AND: [{ OR: [{ lastVerifiedAt: null }, { lastVerifiedAt: { lt: staleBefore } }] }],
+        }),
         ...(q && {
           OR: [
             { searchText: { contains: q.toLowerCase(), mode: 'insensitive' } },

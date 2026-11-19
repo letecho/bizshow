@@ -9,6 +9,7 @@ export function AdminHeader({ title }: { title: string }) {
         <a href="/admin">掲載一覧</a>
         <a href="/admin/services/new">新規作成</a>
         <a href="/admin/listing-requests">掲載申請</a>
+        <a href="/admin/blocklist">ブロックリスト</a>
         <form method="post" action="/admin/auth/logout">
           <button type="submit" className={styles.secondary}>
             ログアウト

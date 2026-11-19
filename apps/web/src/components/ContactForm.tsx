@@ -13,7 +13,16 @@ type FormState = { status: Status; invalid: string[] };
 const ERROR_ID = 'contact-form-error';
 
 /** お問い合わせフォーム。ブラウザから API へ直接送信する（IP 毎の送信制限を利用者単位で効かせるため） */
-export function ContactForm({ locale, t }: { locale: SupportedLocale; t: Dictionary['contact'] }) {
+export function ContactForm({
+  locale,
+  t,
+  initialMessage = '',
+}: {
+  locale: SupportedLocale;
+  t: Dictionary['contact'];
+  /** 本文の初期値（掲載情報の修正・削除の依頼で件名と slug を入れる、F-116） */
+  initialMessage?: string;
+}) {
   const [{ status, invalid }, setState] = useState<FormState>({ status: 'idle', invalid: [] });
   const setStatus = (next: Status) => setState({ status: next, invalid: [] });
   const labels: Record<string, string> = { name: t.name, email: t.email, message: t.message };
@@ -91,6 +100,7 @@ export function ContactForm({ locale, t }: { locale: SupportedLocale; t: Diction
           required
           maxLength={INQUIRY_MESSAGE_MAX}
           rows={8}
+          defaultValue={initialMessage}
           {...invalidProps(invalid, 'message', ERROR_ID)}
         />
       </label>

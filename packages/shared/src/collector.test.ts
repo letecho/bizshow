@@ -8,6 +8,7 @@ import {
   hasTargetLanguageEvidence,
   isEntityInScope,
   loadCollectorConfig,
+  loadStaleDays,
   type CandidateExtract,
 } from './index';
 
@@ -271,5 +272,15 @@ describe('scoreCandidate (F-114)', () => {
   it('returns 0 for a closed corporation', async () => {
     const { scoreCandidate } = await import('./collector');
     expect(scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence: vi, closedCorporation: true })).toBe(0);
+  });
+});
+
+describe('loadStaleDays (F-116)', () => {
+  it('reads COLLECTOR_STALE_DAYS with the default 180 and rejects invalid values', () => {
+    expect(loadStaleDays({})).toBe(180);
+    expect(loadStaleDays({ COLLECTOR_STALE_DAYS: '30' })).toBe(30);
+    // 他の収集設定が不正でも影響を受けない
+    expect(loadStaleDays({ COLLECTOR_STALE_DAYS: '30', COLLECTOR_CATEGORIES: 'nope' })).toBe(30);
+    expect(() => loadStaleDays({ COLLECTOR_STALE_DAYS: '0' })).toThrow(CollectorConfigError);
   });
 });

@@ -2,6 +2,7 @@ import {
   CandidateExtractSchema,
   classifyEntity,
   hasTargetLanguageEvidence,
+  isBlockedEntity,
   isEntityInScope,
   scoreCandidate,
   type CandidateExtract,
@@ -61,6 +62,7 @@ export async function runCollection({
   try {
     const records = await adapter.collect({ source, config, now: startedAt, options });
     counts.fetchedCount = records.length;
+    const blocklist = await repo.loadBlocklist();
 
     const eligible: Pending[] = [];
     for (const record of records) {
@@ -73,6 +75,8 @@ export async function runCollection({
       }
       const extracted = parsed.data;
       if (!config.categories.includes(extracted.category) || !config.prefectures.includes(extracted.prefecture)) continue;
+      // 停止依頼などでブロックリストに登録された事業者は候補を作らない（F-116）
+      if (isBlockedEntity(blocklist, extracted)) continue;
 
       const entity = classifyEntity({
         name: extracted.name.ja ?? extracted.name.en ?? '',
@@ -137,6 +141,8 @@ export async function runCollection({
           counts.skippedByEntityCount += 1;
           continue;
         }
+        // 照会で分かった法人番号もブロックリストと照合する
+        if (isBlockedEntity(blocklist, { corporateNumber })) continue;
       }
 
       const match = matcher.match({ sourceId: source.id, sourceRecordId: record.sourceRecordId, extracted, corporateNumber });

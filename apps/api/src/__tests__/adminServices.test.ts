@@ -37,6 +37,32 @@ describe('admin services API', () => {
     expect(hidden.body.data.map((s: { slug: string }) => s.slug)).toEqual(['hidden-one']);
   });
 
+  it('filters collected listings not verified within COLLECTOR_STALE_DAYS with stale=true (F-116)', async () => {
+    const sources = [{ attribution: 'Source', url: null }];
+    const day = 24 * 60 * 60 * 1000;
+    const ago = (days: number) => new Date(Date.now() - days * day).toISOString();
+    const records = [
+      makeRecord({ slug: 'manual-old' }),
+      makeRecord({ slug: 'collected-never', sources }),
+      makeRecord({ slug: 'collected-old', sources, lastVerifiedAt: ago(31) }),
+      makeRecord({ slug: 'collected-fresh', sources, lastVerifiedAt: ago(29) }),
+    ];
+    const app = testApp([], { serviceRepository: createInMemoryServiceRepository(records), staleDays: 30 });
+    const stale = await request(app).get('/api/v1/admin/services?stale=true');
+    expect(stale.status).toBe(200);
+    expect(stale.body.data.map((s: { slug: string }) => s.slug).sort()).toEqual(['collected-never', 'collected-old']);
+    expect(stale.body.meta.total).toBe(2);
+    expect((await request(app).get('/api/v1/admin/services')).body.meta.total).toBe(4);
+  });
+
+  it('keeps sources and lastVerifiedAt when an admin edits the listing', async () => {
+    const records = [makeRecord({ slug: 'collected', sources: [{ attribution: 'Source', url: null }], lastVerifiedAt: '2026-11-01T00:00:00.000Z' })];
+    const app = testApp([], { serviceRepository: createInMemoryServiceRepository(records) });
+    const res = await request(app).put(`/api/v1/admin/services/${records[0].id}`).send({ ...input, slug: 'collected' });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ sources: [{ attribution: 'Source', url: null }], lastVerifiedAt: '2026-11-01T00:00:00.000Z' });
+  });
+
   it('create → publish makes the service appear in the public search API', async () => {
     const { app } = setup();
     // 公開前の検索結果をキャッシュさせる

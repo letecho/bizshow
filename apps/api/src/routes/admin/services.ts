@@ -5,6 +5,8 @@ import { SlugConflictError, type ServiceAdminRepository } from '../../repositori
 import { asyncHandler } from '../asyncHandler';
 import { invalidateServiceCache } from '../serviceCache';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export const notFound = (id: string) => new HttpError(404, 'NOT_FOUND', `Service not found: ${id}`);
 
 /** SlugConflictError → 409 CONFLICT */
@@ -18,7 +20,10 @@ export async function withSlugConflict<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /** /api/v1/admin/services: 掲載 CRUD・公開切替。更新系は公開キャッシュを無効化する */
-export function adminServicesRouter(repo: ServiceAdminRepository): Router {
+export function adminServicesRouter(
+  repo: ServiceAdminRepository,
+  { staleDays, now = () => new Date() }: { staleDays: number; now?: () => Date },
+): Router {
   const router = Router();
 
   const found = async (id: string): Promise<AdminService> => {
@@ -31,7 +36,8 @@ export function adminServicesRouter(repo: ServiceAdminRepository): Router {
     '/',
     asyncHandler(async (req, res) => {
       const query = AdminServiceListQuerySchema.parse(req.query);
-      const { items, total } = await repo.adminList(query);
+      const staleBefore = query.stale ? new Date(now().getTime() - staleDays * DAY_MS) : undefined;
+      const { items, total } = await repo.adminList({ ...query, staleBefore });
       res.json({ data: items, meta: { page: query.page, limit: query.limit, total } });
     }),
   );

@@ -6,6 +6,7 @@ import { getDictionary } from '../../../../i18n/dictionaries';
 import { localeNames } from '../../../../i18n/config';
 import { prefectureName } from '../../../../i18n/labels';
 import { getService } from '../../../../lib/api';
+import { formatVerifiedDate, listingReportHref } from '../../../../lib/listingReport';
 import { googleMapsSearchUrl } from '../../../../lib/mapLink';
 import styles from './page.module.css';
 
@@ -111,7 +112,40 @@ export default async function ServiceDetailPage({ params }: Props) {
                 ))}
               </ul>
             </dd>
+            {result.value.data.sources.length > 0 && (
+              <>
+                <dt>{t.sources}</dt>
+                <dd>
+                  <ul className={styles.sources}>
+                    {result.value.data.sources.map((source) => (
+                      <li key={`${source.attribution}|${source.url ?? ''}`}>
+                        {source.url ? (
+                          <a href={source.url} target="_blank" rel="noopener noreferrer">
+                            {source.attribution}
+                          </a>
+                        ) : (
+                          source.attribution
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </>
+            )}
+            {result.value.data.lastVerifiedAt && (
+              <>
+                <dt>{t.lastVerified}</dt>
+                <dd>
+                  <time dateTime={result.value.data.lastVerifiedAt}>
+                    {formatVerifiedDate(result.value.data.lastVerifiedAt, locale)}
+                  </time>
+                </dd>
+              </>
+            )}
           </dl>
+          <p className={styles.report}>
+            <a href={listingReportHref(locale, result.value.data.slug)}>{t.reportListing}</a>
+          </p>
         </article>
       )}
     </main>

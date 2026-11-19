@@ -29,6 +29,10 @@ model ServiceListing {
   imageKey           String?
   /// 法人番号（13 桁、F-114 の名寄せに使う）
   corporateNumber    String?
+  /// 出典（ListingSource[]: DataSource.attribution と sourceUrl、F-116）。手入力の掲載は null
+  sources            Json?
+  /// 掲載内容を最後に確認した日時（F-116）。収集の承認・再確認で更新する
+  lastVerifiedAt     DateTime?
   /// 全言語の name + description を小文字で連結した検索用テキスト
   searchText         String
   isPublished        Boolean  @default(true)
@@ -193,4 +197,23 @@ model ServiceCandidate {
 
   @@unique([sourceId, sourceRecordId])
   @@index([status, hasTargetLanguage, score])
+}
+
+enum CrawlBlockReason {
+  optout
+  terms
+  robots
+}
+
+/// 収集・クロールの対象外（F-116）。登録済みのドメイン（サブドメインを含む）・法人番号は候補を作らない
+model CrawlBlocklist {
+  id              String           @id @default(cuid())
+  domain          String?
+  corporateNumber String?
+  reason          CrawlBlockReason
+  note            String?
+  createdAt       DateTime         @default(now())
+
+  @@index([domain])
+  @@index([corporateNumber])
 }
