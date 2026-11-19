@@ -1,6 +1,7 @@
 import type { AdminService, AdminServiceInput } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
 import { imageUrlFor } from '../storage/storage';
+import type { ListingProvenance } from './candidateRepository';
 import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
 
 /** imageUrl は imageKey から導出するため保持しない */
@@ -23,6 +24,11 @@ function fromInput(input: AdminServiceInput) {
     imageKey: input.imageKey ?? null,
     searchText: buildSearchText(input.name, input.description),
   };
+}
+
+/** 出典・確認日（法人番号は AdminService に含めないため InMemory では保持しない） */
+function fromProvenance(provenance?: ListingProvenance): Partial<InMemoryServiceRecord> {
+  return provenance ? { sources: provenance.sources, lastVerifiedAt: provenance.lastVerifiedAt } : {};
 }
 
 /** テスト・ローカル用。Prisma 実装と同じ絞り込み・並び順を再現する */
@@ -91,15 +97,15 @@ export function createInMemoryServiceRepository(
       return record ? toAdminService(record) : null;
     },
 
-    async create(input) {
+    async create(input, provenance) {
       assertSlugFree(input.slug);
       seq += 1;
       const now = new Date().toISOString();
       const record: InMemoryServiceRecord = {
         ...fromInput(input),
         id: `new-${seq}`,
-        sources: [],
-        lastVerifiedAt: null,
+        sources: provenance?.sources ?? [],
+        lastVerifiedAt: provenance?.lastVerifiedAt ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -107,9 +113,9 @@ export function createInMemoryServiceRepository(
       return toAdminService(record);
     },
 
-    async update(id, input) {
+    async update(id, input, provenance) {
       assertSlugFree(input.slug, id);
-      return modify(id, fromInput(input));
+      return modify(id, { ...fromInput(input), ...fromProvenance(provenance) });
     },
 
     async setPublished(id, isPublished) {

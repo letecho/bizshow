@@ -65,6 +65,11 @@ describe('admin API routes require authentication (all routes)', () => {
         { method: 'get', path: '/api/v1/admin/blocklist' },
         { method: 'post', path: '/api/v1/admin/blocklist' },
         { method: 'delete', path: '/api/v1/admin/blocklist/test-id' },
+        { method: 'get', path: '/api/v1/admin/candidates' },
+        { method: 'get', path: '/api/v1/admin/candidates/test-id' },
+        { method: 'post', path: '/api/v1/admin/candidates/test-id/approve' },
+        { method: 'post', path: '/api/v1/admin/candidates/test-id/reject' },
+        { method: 'post', path: '/api/v1/admin/candidates/test-id/hold' },
       ]),
     );
   });

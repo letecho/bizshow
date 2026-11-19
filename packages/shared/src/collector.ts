@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import {
+  AdminServiceInputSchema,
   LISTING_TEXT_MAX,
   PREFECTURES,
   SERVICE_CATEGORIES,
   SUPPORTED_LOCALES,
+  type AdminService,
   type PrefectureCode,
   type ServiceCategory,
   type SupportedLocale,
@@ -30,7 +32,8 @@ export const ENTITY_TYPES = ['corporation', 'public', 'individual', 'unknown'] a
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 /** 事業者の種類の判定根拠 */
-export const ENTITY_EVIDENCE_KINDS = ['source_field', 'corporate_number', 'name_suffix', 'public_list'] as const;
+/** admin_review: 承認時に管理者が種類を変更した根拠（F-113） */
+export const ENTITY_EVIDENCE_KINDS = ['source_field', 'corporate_number', 'name_suffix', 'public_list', 'admin_review'] as const;
 export type EntityEvidenceKind = (typeof ENTITY_EVIDENCE_KINDS)[number];
 
 /** 収集する事業者の種類（COLLECTOR_ENTITY_SCOPE） */
@@ -154,6 +157,13 @@ export class CollectorConfigError extends Error {
     super(`Invalid collector config:\n- ${issues.join('\n- ')}`);
     this.name = 'CollectorConfigError';
   }
+}
+
+/** COLLECTOR_ENTITY_SCOPE だけを読む（API の候補承認用。他の収集設定の不正で API を止めない） */
+export function loadEntityScope(env: Record<string, string | undefined>): EntityScope {
+  const parsed = CollectorEnvSchema.shape.COLLECTOR_ENTITY_SCOPE.safeParse(env.COLLECTOR_ENTITY_SCOPE);
+  if (!parsed.success) throw new CollectorConfigError([`COLLECTOR_ENTITY_SCOPE: ${parsed.error.issues[0]?.message}`]);
+  return parsed.data;
 }
 
 /** COLLECTOR_STALE_DAYS だけを読む（API の /admin?stale=1 用。他の収集設定の不正で API を止めない） */
@@ -498,4 +508,131 @@ export function scoreCandidate(input: ScoreInput): number {
   const score =
     w.source[input.sourceKind] + Math.round((w.requiredFields * filled) / 4) + language + (input.matchedOtherSource ? w.multiSource : 0);
   return Math.max(0, Math.min(100, score));
+}
+
+// ---- 掲載候補のレビュー（F-113） ------------------------------------------------
+
+const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
+const flagQuery = z.preprocess(
+  emptyToUndefined,
+  z
+    .enum(['1', 'true', '0', 'false'])
+    .transform((v) => v === '1' || v === 'true')
+    .optional(),
+);
+
+export const CandidateListQuerySchema = z.object({
+  /** 既定 pending */
+  status: z.preprocess(emptyToUndefined, z.enum(CANDIDATE_STATUSES).default('pending')),
+  /** DataSource.id */
+  source: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
+  category: z.preprocess(emptyToUndefined, z.enum(SERVICE_CATEGORIES).optional()),
+  prefecture: z.preprocess(emptyToUndefined, z.enum(PREFECTURE_CODES as [PrefectureCode, ...PrefectureCode[]]).optional()),
+  minScore: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).max(100).optional()),
+  /** true = 対象言語（COLLECTOR_TARGET_LANGUAGES）の根拠がある候補のみ */
+  targetLang: flagQuery,
+  page: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).default(1)),
+  limit: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(100).default(50)),
+});
+export type CandidateListQuery = z.infer<typeof CandidateListQuerySchema>;
+
+export const CANDIDATE_REVIEW_NOTE_MAX = 500;
+const reviewNote = z.preprocess(emptyToUndefined, z.string().trim().max(CANDIDATE_REVIEW_NOTE_MAX).optional());
+
+/**
+ * 承認: 掲載の全項目（管理者が編集した値）＋ slug・公開状態。
+ * 種類が個人・不明の候補を承認するには、管理者が種類と根拠（法人番号など）を入力する（entityOverride）
+ */
+export const ApproveCandidateSchema = AdminServiceInputSchema.extend({
+  entityOverride: z
+    .object({
+      entityType: z.enum(['corporation', 'public']),
+      evidence: z.string().trim().min(1).max(200),
+    })
+    .optional(),
+});
+export type ApproveCandidateInput = z.infer<typeof ApproveCandidateSchema>;
+
+export const RejectCandidateSchema = z.object({ reason: reviewNote });
+export const HoldCandidateSchema = z.object({ note: reviewNote });
+
+/** 管理画面用の掲載候補 */
+export interface AdminCandidate {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  sourceUrl: string | null;
+  sourceRecordId: string;
+  /** ISO 8601 */
+  fetchedAt: string;
+  extracted: CandidateExtract;
+  languageEvidence: LanguageEvidence[];
+  hasTargetLanguage: boolean;
+  entityType: EntityType;
+  entityEvidence: EntityEvidence[];
+  corporateNumber: string | null;
+  matchedListingId: string | null;
+  matchType: CandidateMatchType;
+  score: number;
+  status: CandidateStatus;
+  reviewNote: string | null;
+  reviewedBy: string | null;
+  /** ISO 8601 */
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+/** 既存掲載と候補の差分の対象項目 */
+export const CANDIDATE_DIFF_FIELDS = [
+  'category',
+  'prefecture',
+  'city',
+  'supportedLanguages',
+  'name',
+  'description',
+  'address',
+  'phone',
+  'websiteUrl',
+] as const;
+export type CandidateDiffField = (typeof CANDIDATE_DIFF_FIELDS)[number];
+
+export interface CandidateFieldDiff {
+  field: CandidateDiffField;
+  current: unknown;
+  candidate: unknown;
+}
+
+/** 候補詳細: 候補と、名寄せで一致した既存掲載・項目ごとの差分 */
+export interface AdminCandidateDetail extends AdminCandidate {
+  matchedListing: AdminService | null;
+  /** 値が異なる項目のみ。候補に値が無い項目・言語は比較しない */
+  diff: CandidateFieldDiff[];
+  /** COLLECTOR_ENTITY_SCOPE で承認できる種類か（false なら entityOverride が必要） */
+  entityApprovable: boolean;
+}
+
+const normalizeForDiff = (v: unknown): unknown => {
+  if (v === null || v === undefined || v === '') return null;
+  if (Array.isArray(v)) return [...v].sort();
+  if (typeof v === 'object') {
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined && x !== null && x !== '');
+    return entries.length ? Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b))) : null;
+  }
+  return v;
+};
+
+/** 既存掲載と候補の差分（候補に値がある項目のうち、既存と異なるもの） */
+export function diffCandidate(extracted: CandidateExtract, listing: AdminService): CandidateFieldDiff[] {
+  return CANDIDATE_DIFF_FIELDS.flatMap((field) => {
+    const candidate = normalizeForDiff(extracted[field]);
+    if (candidate === null || (Array.isArray(candidate) && candidate.length === 0)) return [];
+    const raw = listing[field];
+    // 多言語テキストは候補にある言語だけを比べる（候補に無い言語は既存の値を残すため差分にしない）
+    const comparable =
+      candidate && typeof candidate === 'object' && !Array.isArray(candidate) && raw && typeof raw === 'object'
+        ? Object.fromEntries(Object.keys(candidate).map((k) => [k, (raw as Record<string, unknown>)[k]]))
+        : raw;
+    const current = normalizeForDiff(comparable);
+    return JSON.stringify(current) === JSON.stringify(candidate) ? [] : [{ field, current: raw ?? null, candidate: extracted[field] }];
+  });
 }

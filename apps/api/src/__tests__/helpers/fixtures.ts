@@ -3,6 +3,7 @@ import { createApp, type AppOptions } from '../../app';
 import { createLogMailer } from '../../mail/mailer';
 import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
 import { createInMemoryBlocklistRepository } from '../../repositories/blocklistRepository';
+import { createInMemoryCandidateRepository } from '../../repositories/candidateRepository';
 import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
 import { createLocalStorage } from '../../storage/storage';
 import {
@@ -47,8 +48,10 @@ export function makeRecord(
 }
 
 export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partial<AppOptions> = {}) {
+  const serviceRepository = overrides.serviceRepository ?? createInMemoryServiceRepository(records);
   return createApp({
-    serviceRepository: createInMemoryServiceRepository(records),
+    serviceRepository,
+    candidateRepository: createInMemoryCandidateRepository([], serviceRepository),
     inquiryRepository: createInMemoryInquiryRepository(),
     listingRequestRepository: createInMemoryListingRequestRepository(),
     blocklistRepository: createInMemoryBlocklistRepository(),
