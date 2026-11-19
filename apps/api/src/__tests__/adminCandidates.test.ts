@@ -174,9 +174,34 @@ describe('admin candidates API (F-113)', () => {
     expect(ok.body.data.candidate.entityEvidence).toContainEqual({ kind: 'admin_review', value: '法人番号 1234567890123 を確認' });
   });
 
-  it('allows individual entities when COLLECTOR_ENTITY_SCOPE=all', async () => {
-    const { app } = setup([candidate({ id: 'i', entityType: 'individual' })], undefined, 'all');
-    expect((await request(app).post('/api/v1/admin/candidates/i/approve').send(approval)).status).toBe(200);
+  it('does not publish individual or unknown entities without a consent record when COLLECTOR_ENTITY_SCOPE=all (F-119)', async () => {
+    const { app, repo, services } = setup(
+      [candidate({ id: 'i', entityType: 'individual' }), candidate({ id: 'u', entityType: 'unknown' }), candidate({ id: 'c' })],
+      [],
+      'all',
+    );
+    const detail = (await request(app).get('/api/v1/admin/candidates/i')).body.data;
+    expect(detail).toMatchObject({ entityApprovable: true, consentRequired: true });
+    expect((await request(app).get('/api/v1/admin/candidates/c')).body.data.consentRequired).toBe(false);
+
+    for (const id of ['i', 'u']) {
+      const res = await request(app).post(`/api/v1/admin/candidates/${id}/approve`).send({ ...approval, slug: `s-${id}` });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('CONSENT_REQUIRED');
+      const empty = await request(app).post(`/api/v1/admin/candidates/${id}/approve`).send({ ...approval, slug: `s-${id}`, consent: { evidence: ' ' } });
+      expect(empty.status).toBe(400);
+    }
+    expect(repo.records.filter((r) => r.status !== 'pending')).toHaveLength(0);
+    expect((await services.adminList({ page: 1, limit: 50 })).total).toBe(0);
+
+    const ok = await request(app)
+      .post('/api/v1/admin/candidates/i/approve')
+      .send({ ...approval, slug: 's-i', consent: { evidence: '掲載申請 #123 で掲載に同意' } });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.candidate.entityType).toBe('individual');
+    expect(ok.body.data.candidate.entityEvidence).toContainEqual({ kind: 'consent', value: '掲載申請 #123 で掲載に同意' });
+    // 法人は同意の記録なしで承認できる
+    expect((await request(app).post('/api/v1/admin/candidates/c/approve').send({ ...approval, slug: 's-c' })).status).toBe(200);
   });
 
   it('returns 404 for unknown candidates', async () => {

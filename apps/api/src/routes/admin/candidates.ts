@@ -10,6 +10,7 @@ import {
   parseDescriptionDraft,
   type BudgetedLlm,
   isEntityInScope,
+  requiresConsent,
   type AdminCandidate,
   type AdminCandidateDetail,
   type EntityScope,
@@ -76,6 +77,7 @@ export function adminCandidatesRouter({ candidates, services, entityScope, llm, 
         matchedListing,
         diff: matchedListing ? diffCandidate(candidate.extracted, matchedListing) : [],
         entityApprovable: isEntityInScope(candidate.entityType, entityScope),
+        consentRequired: requiresConsent(candidate.entityType, entityScope),
         descriptionDraftAvailable: Boolean(llm) && isReviewable(candidate),
       };
       res.json({ data: detail });
@@ -86,7 +88,7 @@ export function adminCandidatesRouter({ candidates, services, entityScope, llm, 
     '/:id/approve',
     asyncHandler(async (req, res) => {
       const id = String(req.params.id);
-      const { entityOverride, ...input } = ApproveCandidateSchema.parse(req.body);
+      const { entityOverride, consent, ...input } = ApproveCandidateSchema.parse(req.body);
       const candidate = await found(id);
       if (!isReviewable(candidate)) {
         throw new HttpError(409, 'CONFLICT', `Candidate is already ${candidate.status}`);
@@ -104,6 +106,19 @@ export function adminCandidatesRouter({ candidates, services, entityScope, llm, 
         entity = {
           entityType: entityOverride.entityType,
           evidence: [...candidate.entityEvidence, { kind: 'admin_review' as const, value: entityOverride.evidence }],
+        };
+      } else if (requiresConsent(candidate.entityType, entityScope)) {
+        // 個人事業主（の可能性がある）候補は、本人の同意の記録が無ければ公開しない（F-119、法務確認メモ 2.1 案 A）
+        if (!consent) {
+          throw new HttpError(
+            400,
+            'CONSENT_REQUIRED',
+            `consent is required: entity type ${candidate.entityType} may be a sole proprietor (personal information)`,
+          );
+        }
+        entity = {
+          entityType: candidate.entityType,
+          evidence: [...candidate.entityEvidence, { kind: 'consent' as const, value: consent.evidence }],
         };
       }
       const result = await withConflict(() =>

@@ -53,4 +53,29 @@ describe('loadLegalDocument', () => {
       }
     }
   });
+
+  // F-119: データ収集に伴う改定（掲載情報の取得方法と出典・掲載情報について）を 4 言語で表示する
+  it('has the revised privacy policy and terms in all four languages (F-119)', async () => {
+    const markers: Record<'privacy' | 'terms', Record<string, string[]>> = {
+      privacy: {
+        ja: ['掲載情報の取得方法と出典', 'robots.txt', '30 日', '7 日以内', '本人の同意を得た場合に限り掲載', '改定日: 2026年11月19日'],
+        en: ['How we obtain listing information and sources', 'robots.txt', '30 days', 'within 7 days', "only with that person's consent", 'Last revised: 2026-11-19'],
+        zh: ['刊登信息的获取方法及出处', 'robots.txt', '30 天', '7 天内', '仅在获得本人同意的情况下刊登', '修订日期：2026年11月19日'],
+        vi: ['Cách thu thập thông tin đăng và nguồn', 'robots.txt', '30 ngày', '7 ngày', 'chỉ được đăng khi có sự đồng ý', 'Ngày sửa đổi: 2026-11-19'],
+      },
+      terms: {
+        ja: ['掲載情報について', '推薦・評価・品質の保証を意味するものではありません', '改定日: 2026年11月19日'],
+        en: ['About listings', 'recommends, rates or guarantees', 'Last revised: 2026-11-19'],
+        zh: ['关于刊登信息', '推荐、评价或质量保证', '修订日期：2026年11月19日'],
+        vi: ['Về thông tin đăng', 'giới thiệu, đánh giá hay bảo đảm chất lượng', 'Ngày sửa đổi: 2026-11-19'],
+      },
+    };
+    for (const page of ['privacy', 'terms'] as const) {
+      for (const locale of SUPPORTED_LOCALES) {
+        const doc = await loadLegalDocument(page, locale, LEGAL_CONTENT_DIR);
+        expect(doc.locale).toBe(locale);
+        for (const marker of markers[page][locale]) expect(doc.markdown).toContain(marker);
+      }
+    }
+  });
 });

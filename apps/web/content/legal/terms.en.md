@@ -10,9 +10,11 @@ These Terms apply to everyone who uses the Service ("Users").
 ## 2. The Service
 The Service lets Users search and view information about multilingual services such as medical, legal, housing and telecom services. Listings are based on information provided by each business or on publicly available information.
 
-## 3. Listings
-1. The Operator does not guarantee the accuracy, timeliness or usefulness of any listing.
-2. Users contact and enter into agreements with listed businesses at their own judgment and risk.
+## 3. About listings
+1. Listings on the Service are created by the Operator based on requests from businesses, open data from government agencies and others, and information published by businesses. The Operator strives to keep listings accurate but does not guarantee that they are up to date, accurate or complete. Please check directly with each business before using its services.
+2. Listings do not mean that the Operator recommends, rates or guarantees the quality of any business.
+3. Requests to correct or remove a listing are accepted via the link on each listing page or our contact form.
+4. Users contact and enter into agreements with listed businesses at their own judgment and risk.
 
 ## 4. Prohibited conduct
 Users must not:
@@ -37,3 +39,4 @@ These Terms are governed by the laws of Japan. The [Competent Court] has exclusi
 The Japanese version of these Terms is the official version. If there is any discrepancy between the Japanese version and a translation, the Japanese version prevails.
 
 Effective date: [YYYY-MM-DD]
+Last revised: 2026-11-19 (revised Article 3, About listings)
