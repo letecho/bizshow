@@ -8,6 +8,7 @@ import type {
   EntityType,
   LanguageEvidence,
 } from '@fss/shared';
+import type { MatchTarget } from './match/matcher';
 
 /** 収集元（DataSource テーブルの行） */
 export interface DataSourceRecord {
@@ -61,6 +62,7 @@ export interface CandidateInput {
   entityEvidence: EntityEvidence[];
   corporateNumber?: string;
   matchType: CandidateMatchType;
+  matchedListingId?: string;
   score: number;
 }
 
@@ -87,4 +89,6 @@ export interface CollectorRepository {
   startRun(sourceId: string, startedAt: Date): Promise<string>;
   finishRun(runId: string, finishedAt: Date, result: RunResult): Promise<void>;
   upsertCandidate(input: CandidateInput): Promise<'created' | 'updated' | 'kept'>;
+  /** 名寄せの相手（全掲載と pending の候補）を読む（F-114） */
+  loadMatchTargets(): Promise<MatchTarget[]>;
 }

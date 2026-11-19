@@ -1,4 +1,5 @@
 import { loadCollectorConfig, CollectorConfigError } from '@fss/shared';
+import { corporateNumberClientFromConfig, type CorporateNumberClient } from './match/corporateNumber';
 import { runCollection } from './run';
 import { sourceAdapters } from './sources';
 import type { CollectorRepository, SourceAdapter } from './types';
@@ -35,6 +36,8 @@ export interface MainDeps {
   env: Record<string, string | undefined>;
   repo: CollectorRepository;
   adapters?: Record<string, SourceAdapter>;
+  /** 未指定なら CORPORATE_NUMBER_API_ID から作る（未設定なら照会しない） */
+  corporateNumberClient?: CorporateNumberClient;
   log?: (message: string) => void;
 }
 
@@ -71,7 +74,14 @@ export async function main(argv: readonly string[], deps: MainDeps): Promise<num
     return 1;
   }
 
-  const result = await runCollection({ source, adapter, config, repo: deps.repo, options: { file: args.file } });
+  const result = await runCollection({
+    source,
+    adapter,
+    config,
+    repo: deps.repo,
+    options: { file: args.file },
+    corporateNumberClient: deps.corporateNumberClient ?? corporateNumberClientFromConfig(config),
+  });
   log(JSON.stringify({ source: source.id, ...result }));
   return result.status === 'succeeded' ? 0 : 1;
 }

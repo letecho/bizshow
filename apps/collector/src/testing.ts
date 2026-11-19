@@ -1,3 +1,4 @@
+import type { MatchTarget } from './match/matcher';
 import type { CandidateInput, CollectorRepository, DataSourceRecord, RunResult } from './types';
 
 export interface StoredCandidate extends CandidateInput {
@@ -14,7 +15,7 @@ export interface StoredRun {
 }
 
 /** テスト用のメモリ上のリポジトリ（Prisma 実装と同じ upsert 規則） */
-export function createMemoryRepository(sources: DataSourceRecord[]) {
+export function createMemoryRepository(sources: DataSourceRecord[], listings: MatchTarget[] = []) {
   const candidates = new Map<string, StoredCandidate>();
   const runs: StoredRun[] = [];
   const repo: CollectorRepository = {
@@ -41,6 +42,23 @@ export function createMemoryRepository(sources: DataSourceRecord[]) {
       if (existing.status !== 'pending') return 'kept';
       candidates.set(key, { ...input, status: 'pending' });
       return 'updated';
+    },
+    async loadMatchTargets() {
+      const pending = [...candidates.values()].filter((c) => c.status === 'pending');
+      return [
+        ...listings,
+        ...pending.map((c) => ({
+          kind: 'candidate' as const,
+          id: `${c.sourceId}/${c.sourceRecordId}`,
+          sourceId: c.sourceId,
+          sourceRecordId: c.sourceRecordId,
+          names: [c.extracted.name.ja, c.extracted.name.en].filter((n): n is string => Boolean(n)),
+          prefecture: c.extracted.prefecture,
+          phone: c.extracted.phone,
+          address: c.extracted.address?.ja ?? c.extracted.address?.en,
+          corporateNumber: c.corporateNumber,
+        })),
+      ];
     },
   };
   return { repo, candidates, runs };
