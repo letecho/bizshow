@@ -1,0 +1,49 @@
+{
+  "$comment": "医療情報ネット（厚生労働省）オープンデータの列の対応。データ形式が変わったらコードではなくこのファイルを直す。null の列は読まない。院長・管理者・開設者の氏名の列は対応付けない（読み込まない）",
+  "zipUrl": null,
+  "csvFilePattern": "\\.csv$",
+  "encoding": "utf-8",
+  "columns": {
+    "id": "ID",
+    "name": "正式名称",
+    "nameEn": "英語表記（ローマ字表記）",
+    "prefecture": "都道府県コード",
+    "city": null,
+    "address": "所在地",
+    "phone": "電話番号",
+    "websiteUrl": "案内用ホームページアドレス",
+    "foreignLanguages": "対応することができる外国語の種類",
+    "ownerType": "開設者種別"
+  },
+  "languageSeparator": "[、,，/／;；・\\s]+",
+  "languageNames": {
+    "日本語": "ja",
+    "英語": "en",
+    "中国語": "zh",
+    "中国語（簡体字）": "zh",
+    "中国語（繁体字）": "zh",
+    "北京語": "zh",
+    "ベトナム語": "vi"
+  },
+  "ownerTypes": {
+    "国": "public",
+    "都道府県": "public",
+    "市町村": "public",
+    "地方独立行政法人": "public",
+    "独立行政法人": "public",
+    "国立大学法人": "public",
+    "公的医療機関": "public",
+    "日本赤十字社": "public",
+    "社会保険関係団体": "public",
+    "医療法人": "corporation",
+    "社会医療法人": "corporation",
+    "社会福祉法人": "corporation",
+    "学校法人": "corporation",
+    "公益法人": "corporation",
+    "一般社団法人": "corporation",
+    "一般財団法人": "corporation",
+    "会社": "corporation",
+    "その他の法人": "corporation",
+    "個人": "individual"
+  }
+}

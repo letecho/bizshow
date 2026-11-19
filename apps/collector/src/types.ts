@@ -29,12 +29,16 @@ export interface CollectedRecord {
   languageEvidence: LanguageEvidence[];
   /** 事業者の種類の判定材料（ソースの開設者種別など） */
   sourceOwnerType?: string | null;
+  /** ソースの対応表で sourceOwnerType から決めた事業者の種類 */
+  sourceEntityType?: EntityType | null;
 }
 
 export interface AdapterContext {
   source: DataSourceRecord;
   config: CollectorConfig;
   now: Date;
+  /** CLI のオプション（例: --file でローカルの入力ファイルを指定） */
+  options: { file?: string };
 }
 
 /** 収集元ごとの処理（fetch → extract）。DataSource.id と同じ名前で sources/index.ts に登録する */

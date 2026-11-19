@@ -16,6 +16,23 @@ pnpm --filter collector collect --source <DataSource.id>
 - 収集元ごとの処理は `SourceAdapter`（`src/types.ts`）として実装し、`src/sources/index.ts` に `DataSource.id` と同じキーで登録します
 - 同じ `sourceRecordId` の再実行では候補を増やさず更新します。レビュー済み（承認・却下・保留）の候補は上書きしません
 
+## 収集元
+
+### mhlw-medical — 医療情報ネット（厚生労働省）オープンデータ（F-112）
+
+- ライセンス: CC BY 4.0。出典表示「出典: 医療情報ネット（厚生労働省）のデータを加工して作成」（`DataSource.attribution`）
+- `pnpm db:seed` で `DataSource`（id: `mhlw-medical`）を **無効**で登録します。管理者が `isEnabled=true` にしてから実行します
+- 入力: 公開ページから ZIP をダウンロードし `--file` で指定（パスは `apps/collector` からの相対、または絶対パス）。`mapping.json` の `zipUrl`（https のみ）を設定すると直接ダウンロードします
+
+```bash
+pnpm --filter collector collect --source mhlw-medical --file /path/to/download.zip
+```
+
+- 列の対応は `src/sources/mhlw-medical/mapping.json`（列名・文字コード・外国語名 → 言語コード・開設者種別 → 事業者の種類）。データ形式が変わったら**このファイルだけ**を直します。`null` の列は読みません
+- 院長・管理者・開設者の氏名の列は対応付けていないため読み込みません
+- カテゴリは常に `medical`。都道府県はコード（01〜47）・名称から変換、電話は数字と `+` だけに正規化、http(s) で始まらない URL は採用しません
+- 外国語対応の列の値は `languageEvidence`（kind=`open_data`）と `supportedLanguages` に入ります。列が無い・空・対応表に無い言語だけのときは空で、score が下がります（承認時に人が設定）
+
 ## 何を保存しないか
 
 | 対象外 | 設定 | 記録 |

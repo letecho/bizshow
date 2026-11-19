@@ -28,6 +28,12 @@ describe('collector CLI (F-111)', () => {
   it('parses --source', () => {
     expect(parseArgs(['--source', 'mhlw-medical'])).toEqual({ help: false, source: 'mhlw-medical' });
     expect(parseArgs(['--source=mhlw-medical'])).toEqual({ help: false, source: 'mhlw-medical' });
+    expect(parseArgs(['--source', 'mhlw-medical', '--file', './data.zip'])).toEqual({
+      help: false,
+      source: 'mhlw-medical',
+      file: './data.zip',
+    });
+    expect(() => parseArgs(['--source', 'x', '--file'])).toThrow('--file');
     expect(parseArgs(['--help'])).toEqual({ help: true });
     expect(() => parseArgs([])).toThrow('--source');
     expect(() => parseArgs(['--source'])).toThrow('--source');
