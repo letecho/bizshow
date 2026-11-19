@@ -1,10 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-// F-116: ボット説明ページ（4 言語）と、掲載詳細 → 修正・削除の依頼（お問い合わせに件名と slug が入る）
+// F-116: ボット説明ページ（3 言語）と、掲載詳細 → 修正・削除の依頼（お問い合わせに件名と slug が入る）
 const BOT_HEADINGS = {
   ja: 'クローラーについて',
   en: 'About our crawler',
-  zh: '关于我们的爬虫',
   vi: 'Về trình thu thập dữ liệu của chúng tôi',
 } as const;
 

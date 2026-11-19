@@ -33,7 +33,7 @@ pnpm dev
 
 | URL | 内容 |
 |---|---|
-| http://localhost:3000 | 検索画面（ブラウザの言語で /ja・/en・/zh・/vi に移動） |
+| http://localhost:3000 | 検索画面（ブラウザの言語で /ja・/en・/vi に移動） |
 | http://localhost:3000/admin | 管理画面。`.env` の `AUTH_MODE=dev` により「開発用ログイン」で入れます |
 | http://localhost:4000/health | API ヘルスチェック |
 

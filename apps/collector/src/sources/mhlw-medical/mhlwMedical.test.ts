@@ -87,7 +87,7 @@ describe('mhlw-medical adapter (F-112)', () => {
     expect(get('F0005')!.extracted).toMatchObject({ prefecture: 'hokkaido' });
     // スキームの無い URL は採用しない
     expect(get('F0005')!.extracted.websiteUrl).toBeUndefined();
-    expect(get('F0009')!.extracted).toMatchObject({ prefecture: 'aichi', phone: '0520000009123', supportedLanguages: ['zh'] });
+    expect(get('F0009')!.extracted).toMatchObject({ prefecture: 'aichi', phone: '0520000009123', supportedLanguages: [] });
     expect(get('F0010')!.extracted.phone).toBe('+81920000010');
   });
 
@@ -102,7 +102,7 @@ describe('mhlw-medical adapter (F-112)', () => {
     // open_data 40 + 必須項目 30 + 対象言語 20（F-114）
     expect(sakura.score).toBe(90);
     expect(get('F0007')!.hasTargetLanguage).toBe(true);
-    // en・zh のみは根拠ありだが対象言語ではない
+    // en のみは根拠ありだが対象言語ではない
     expect(get('F0002')!).toMatchObject({ hasTargetLanguage: false, score: 80 });
   });
 

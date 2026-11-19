@@ -92,7 +92,7 @@ AIの着手順: `ai-ready` かつ `phase:poc` → `phase:mvp` の順、同フェ
 - 受入条件をすべて満たし、対応するテスト（API: vitest+supertest、shared: vitest）がある。バグ修正は再現テストを含める
 - `pnpm verify` 通過、secret-scan 通過
 - 新しい環境変数は `.env.example` に追記、DB変更は Prisma マイグレーション同梱（Expand/Contract）
-- ユーザー向け文言は4言語（ja/en/zh/vi）キーを用意（未翻訳は en をフォールバック）
+- ユーザー向け文言は3言語（ja/en/vi）キーを用意（未翻訳は en をフォールバック）
 
 ## 7. GitHub設定（管理者が一度だけ実施）
 

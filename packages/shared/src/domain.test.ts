@@ -20,7 +20,7 @@ import {
 
 describe('constants', () => {
   it('defines 4 locales, 8 categories and 47 prefectures', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['ja', 'en', 'zh', 'vi']);
+    expect(SUPPORTED_LOCALES).toEqual(['ja', 'en', 'vi']);
     expect(SERVICE_CATEGORIES).toHaveLength(8);
     expect(PREFECTURES).toHaveLength(47);
     expect(new Set(PREFECTURES.map((p) => p.code)).size).toBe(47);

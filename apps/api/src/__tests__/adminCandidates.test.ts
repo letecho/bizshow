@@ -213,7 +213,7 @@ describe('admin candidates API (F-113)', () => {
 });
 
 describe('description draft (F-117)', () => {
-  const draft = { ja: '新宿区の医療機関です。', en: 'A clinic in Shinjuku.', zh: '位于新宿区的诊所。', vi: 'Phòng khám ở Shinjuku.' };
+  const draft = { ja: '新宿区の医療機関です。', en: 'A clinic in Shinjuku.', vi: 'Phòng khám ở Shinjuku.' };
   const settings = { enabled: true, monthlyBudgetJpy: 100, model: 'test-model', priceInPerMTokJpy: 500, priceOutPerMTokJpy: 2500, apiKey: 'dummy' };
 
   function setupLlm(text: string | null, opts: { spent?: number; fail?: boolean } = {}) {
@@ -247,7 +247,7 @@ describe('description draft (F-117)', () => {
     expect(res.body.error.code).toBe('LLM_DISABLED');
   });
 
-  it('returns a 4-language draft built from facts only and records the usage', async () => {
+  it('returns a draft (ja/en/vi) built from facts only and records the usage', async () => {
     const { app, c, complete, entries, repo } = setupLlm(JSON.stringify(draft));
     expect((await request(app).get(`/api/v1/admin/candidates/${c.id}`)).body.data.descriptionDraftAvailable).toBe(true);
     const res = await request(app).post(`/api/v1/admin/candidates/${c.id}/description-draft`);

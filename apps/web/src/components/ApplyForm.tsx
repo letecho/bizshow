@@ -106,9 +106,9 @@ export function ApplyForm({
     ['address', dict.detail.address],
   ] as const) {
     for (const l of locales) {
-      // 項目名と言語名の区切り（日本語・中国語は全角括弧）
+      // 項目名と言語名の区切り（日本語は全角括弧）
       labels[`${field}_${l}`] =
-        locale === 'ja' || locale === 'zh' ? `${legend}（${localeNames[l]}）` : `${legend} (${localeNames[l]})`;
+        locale === 'ja' ? `${legend}（${localeNames[l]}）` : `${legend} (${localeNames[l]})`;
     }
   }
   const invalidLabels = invalid.map((name) => labels[name]).filter((label): label is string => !!label);

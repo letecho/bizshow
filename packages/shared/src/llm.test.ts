@@ -108,11 +108,11 @@ describe('description draft', () => {
     expect(req.user.match(/<\/facts>/g)).toHaveLength(1);
   });
 
-  it('accepts only a valid 4-language draft', () => {
-    const ok = { ja: 'a', en: 'b', zh: 'c', vi: 'd' };
+  it('accepts only a valid 3-language draft (ja/en/vi)', () => {
+    const ok = { ja: 'a', en: 'b', vi: 'd' };
     expect(parseDescriptionDraft('```json\n' + JSON.stringify(ok) + '\n```')).toEqual(ok);
     expect(parseDescriptionDraft(JSON.stringify({ ...ok, vi: '' }))).toBeUndefined();
-    expect(parseDescriptionDraft(JSON.stringify({ ja: 'a', en: 'b', zh: 'c' }))).toBeUndefined();
+    expect(parseDescriptionDraft(JSON.stringify({ ja: 'a', en: 'b' }))).toBeUndefined();
     expect(parseDescriptionDraft(JSON.stringify({ ...ok, en: 'x'.repeat(401) }))).toBeUndefined();
     expect(parseDescriptionDraft('not json')).toBeUndefined();
     expect(parseDescriptionDraft(null)).toBeUndefined();

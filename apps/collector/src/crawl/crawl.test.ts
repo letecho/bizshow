@@ -133,7 +133,6 @@ describe('parsePage / selectFollowLinks', () => {
   it('finds html lang, hreflang, path and language switch links including Tiếng Việt', () => {
     const html = `<html lang="ja"><head>
       <link rel="alternate" hreflang="en" href="https://www.example.jp/en/">
-      <link rel="alternate" hreflang="zh-Hans" href="https://www.example.jp/zh/">
       <link rel="alternate" hreflang="x-default" href="https://www.example.jp/">
     </head><body>
       <a href="/vi/">Tiếng Việt</a> <a href="/company/">会社概要</a>
@@ -143,7 +142,6 @@ describe('parsePage / selectFollowLinks', () => {
       expect.arrayContaining([
         { lang: 'ja', signal: 'html_lang', url: top.toString() },
         { lang: 'en', signal: 'hreflang', url: top.toString() },
-        { lang: 'zh', signal: 'hreflang', url: top.toString() },
         { lang: 'vi', signal: 'switch_link', url: 'https://www.example.jp/vi/' },
       ]),
     );

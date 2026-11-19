@@ -2,7 +2,7 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, type SupportedLocale } from '@fss/sh
 
 /**
  * Accept-Language ヘッダーから対応言語の最適一致を返す。
- * q 値の高い順に、言語タグの主言語（zh-CN → zh）で照合。一致なしは en。
+ * q 値の高い順に、言語タグの主言語（vi-VN → vi）で照合。一致なしは en。
  */
 export function negotiateLocale(acceptLanguage: string | null | undefined): SupportedLocale {
   if (!acceptLanguage) return DEFAULT_LOCALE;

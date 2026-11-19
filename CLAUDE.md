@@ -11,7 +11,7 @@
 ## ルール
 1. 作業単位は GitHub Issue（`ai-ready` のみ着手）。仕様にない機能を足さない。不明点は推測で埋めず PR 本文の「確認事項」に書く。不具合はシート「バグ一覧」と `type:bug` Issue で管理し、修正 PR には再現テストを付ける（`docs/DEVELOPMENT.md` 5章）
 2. API と Web で共有する型・入力検証は `packages/shared` に置く（Web から API の型を直接 import しない）
-3. 対応言語は `SupportedLocale = 'ja' | 'en' | 'zh' | 'vi'`。翻訳テキストは `Record<Locale, string>` 形式、欠損時は `en` フォールバック
+3. 対応言語は `SupportedLocale = 'ja' | 'en' | 'vi'`。翻訳テキストは `Record<Locale, string>` 形式、欠損時は `en` フォールバック
 4. API: `GET /api/v1/...`、レスポンスは `{ data, meta? }`、エラーは `{ error: { code, message } }`
 5. 新しい依存追加は最小限。lockfile は `lockfile-sync` が自動更新するので package.json だけ変更すればよい
 6. 完了前に `pnpm verify` 相当（lint / typecheck / test / build）が通ること。API変更にはテストを付ける

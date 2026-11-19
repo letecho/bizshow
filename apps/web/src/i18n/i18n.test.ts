@@ -5,15 +5,14 @@ import { switchLocalePath } from './config';
 import en from './dictionaries/en.json';
 import ja from './dictionaries/ja.json';
 import vi from './dictionaries/vi.json';
-import zh from './dictionaries/zh.json';
 
-const raw = { ja, zh, vi };
+const raw = { ja, vi };
 
 describe('negotiateLocale', () => {
   it.each([
     ['vi', 'vi'],
     ['vi-VN,vi;q=0.9,en;q=0.8', 'vi'],
-    ['fr-FR,fr;q=0.9,zh-CN;q=0.8,en;q=0.5', 'zh'],
+    ['fr-FR,fr;q=0.9,vi-VN;q=0.8,en;q=0.5', 'vi'],
     ['en;q=0.5,ja;q=0.9', 'ja'],
     ['fr,de', 'en'],
     ['', 'en'],
@@ -30,7 +29,7 @@ describe('getDictionary', () => {
 
   it('has every en key in all locales after fallback', () => {
     // categories / search も含め全セクションのキーが揃うこと
-    for (const locale of ['ja', 'zh', 'vi'] as const) {
+    for (const locale of ['ja', 'vi'] as const) {
       const dict = getDictionary(locale);
       expect(Object.keys(dict)).toEqual(Object.keys(en));
       for (const section of Object.keys(en) as (keyof typeof en)[]) {

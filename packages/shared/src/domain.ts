@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ---- Locale ----------------------------------------------------------------
 
-export const SUPPORTED_LOCALES = ['ja', 'en', 'zh', 'vi'] as const;
+export const SUPPORTED_LOCALES = ['ja', 'en', 'vi'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 /** 短縮エイリアス */
 export type Locale = SupportedLocale;
@@ -191,7 +191,6 @@ export const localizedTextInput = (max: number) =>
   z.object({
     en: z.string().trim().min(1).max(max),
     ja: optionalText(max),
-    zh: optionalText(max),
     vi: optionalText(max),
   });
 

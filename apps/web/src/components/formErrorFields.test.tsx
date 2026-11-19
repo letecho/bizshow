@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { isValidElement, type ReactNode } from 'react';
-import { InquiryInputSchema, ListingRequestInputSchema } from '@fss/shared/domain';
+import { InquiryInputSchema, ListingRequestInputSchema, SUPPORTED_LOCALES } from '@fss/shared/domain';
 import { getDictionary } from '../i18n/dictionaries';
 import { invalidFieldNames } from '../lib/formErrors';
 
@@ -98,7 +98,7 @@ describe('ApplyForm のエラー表示', () => {
     expect(message).toContain(dict.apply.contactEmail);
     expect(message).not.toContain(dict.apply.contactName);
     const invalid = invalidControls(els);
-    expect(invalid.filter((n) => n === 'supportedLanguages')).toHaveLength(4);
+    expect(invalid.filter((n) => n === 'supportedLanguages')).toHaveLength(SUPPORTED_LOCALES.length);
     expect(new Set(invalid)).toEqual(new Set(['supportedLanguages', 'name_en', 'contactEmail']));
   });
 

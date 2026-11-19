@@ -19,7 +19,7 @@ describe('SEED_LISTINGS', () => {
     expect(new Set(SEED_LISTINGS.map((l) => l.slug)).size).toBe(24);
   });
 
-  it('has name/description in all 4 languages and a generated searchText', () => {
+  it('has name/description in all supported languages (ja/en/vi) and a generated searchText', () => {
     for (const l of SEED_LISTINGS) {
       for (const locale of SUPPORTED_LOCALES) {
         expect(l.name[locale]).toBeTruthy();

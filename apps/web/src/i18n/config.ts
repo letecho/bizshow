@@ -8,7 +8,6 @@ export type { SupportedLocale };
 export const localeNames: Record<SupportedLocale, string> = {
   ja: '日本語',
   en: 'English',
-  zh: '中文',
   vi: 'Tiếng Việt',
 };
 

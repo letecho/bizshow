@@ -12,7 +12,7 @@ const records = [
     slug: 'medical-tokyo',
     category: 'medical',
     prefecture: 'tokyo',
-    supportedLanguages: ['ja', 'en', 'zh', 'vi'],
+    supportedLanguages: ['ja', 'en', 'vi'],
     name: { en: 'Shinjuku Clinic', ja: '新宿クリニック' },
   }),
   makeRecord({ slug: 'housing-hidden', category: 'housing', isPublished: false, supportedLanguages: ['vi'] }),
@@ -31,7 +31,7 @@ describe('GET /api/v1/services', () => {
       category: 'medical',
       prefecture: 'tokyo',
       city: null,
-      supportedLanguages: ['ja', 'en', 'zh', 'vi'],
+      supportedLanguages: ['ja', 'en', 'vi'],
       name: { en: 'Shinjuku Clinic', ja: '新宿クリニック' },
     });
   });

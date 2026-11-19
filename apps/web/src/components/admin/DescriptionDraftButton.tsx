@@ -46,7 +46,7 @@ export function DescriptionDraftButton({ action }: { action: () => Promise<Descr
         {pending ? '下書きを作成中…' : '説明文の下書きを作成'}
       </button>
       <span id="description-draft-note">
-        名称・カテゴリ・地域・対応言語だけから LLM で 4 言語の短い説明文を作り、空の説明欄に入れます（収集元の文章は使いません）。
+        名称・カテゴリ・地域・対応言語だけから LLM で日本語・英語・ベトナム語の短い説明文を作り、空の説明欄に入れます（収集元の文章は使いません）。
       </span>
       <span role="status" className={message?.error ? formStyles.error : undefined}>
         {message?.text}

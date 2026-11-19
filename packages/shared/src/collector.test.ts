@@ -53,7 +53,7 @@ describe('loadCollectorConfig (F-111)', () => {
       COLLECTOR_CATEGORIES: 'legal, medical',
       COLLECTOR_PREFECTURES: 'tokyo,osaka',
       COLLECTOR_ENTITY_SCOPE: 'corporate',
-      COLLECTOR_TARGET_LANGUAGES: 'vi,zh',
+      COLLECTOR_TARGET_LANGUAGES: 'vi,en',
       COLLECTOR_TARGET_LANGUAGE_MODE: 'require',
       COLLECTOR_MAX_CANDIDATES_PER_RUN: '500',
       COLLECTOR_CRAWL_ENABLED: 'true',
@@ -65,7 +65,7 @@ describe('loadCollectorConfig (F-111)', () => {
     expect(c.categories).toEqual(['legal', 'medical']);
     expect(c.prefectures).toEqual(['tokyo', 'osaka']);
     expect(c.entityScope).toBe('corporate');
-    expect(c.targetLanguages).toEqual(['vi', 'zh']);
+    expect(c.targetLanguages).toEqual(['vi', 'en']);
     expect(c.targetLanguageMode).toBe('require');
     expect(c.maxCandidatesPerRun).toBe(500);
     expect(c.crawl.enabled).toBe(true);
@@ -283,7 +283,7 @@ describe('scoreCandidate (F-114)', () => {
 
   it('scores target-language evidence higher than other languages only, and ignores ja', async () => {
     const { scoreCandidate } = await import('./collector');
-    const s = (languageEvidence: { lang: 'ja' | 'en' | 'zh' | 'vi'; kind: string; value: string }[]) =>
+    const s = (languageEvidence: { lang: 'ja' | 'en' | 'vi'; kind: string; value: string }[]) =>
       scoreCandidate({ ...base, sourceKind: 'open_data', extracted: full, languageEvidence });
     expect(s(vi)).toBeGreaterThan(s(en));
     expect(s([...en, ...vi])).toBe(90);
