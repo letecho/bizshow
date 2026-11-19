@@ -15,7 +15,15 @@ export type ErrorCode =
   | 'LLM_DISABLED'
   | 'LLM_BUDGET_EXCEEDED'
   | 'LLM_UNAVAILABLE'
-  | 'LLM_INVALID_OUTPUT';
+  | 'LLM_INVALID_OUTPUT'
+  // 掲載案内（F-118）: 無効・ブロックリスト・受信拒否・送信済み・1 日の上限・送信失敗・リンクが無効
+  | 'OUTREACH_DISABLED'
+  | 'OUTREACH_BLOCKED'
+  | 'OUTREACH_OPTED_OUT'
+  | 'OUTREACH_ALREADY_SENT'
+  | 'OUTREACH_DAILY_LIMIT'
+  | 'MAIL_FAILED'
+  | 'INVALID_TOKEN';
 
 /** ルートから throw すると status / code がそのままレスポンスになる */
 export class HttpError extends Error {

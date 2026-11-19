@@ -88,7 +88,9 @@
     "sent": "Cảm ơn bạn. Chúng tôi đã nhận được đơn đăng ký và sẽ liên hệ sau khi xem xét.",
     "invalid": "Vui lòng kiểm tra các mục bắt buộc (danh mục, tỉnh/thành, ngôn ngữ, tên và mô tả bằng tiếng Anh, người phụ trách và email).",
     "invalidFields": "Vui lòng kiểm tra các mục sau:",
-    "error": "Không thể gửi đơn đăng ký. Vui lòng thử lại sau."
+    "error": "Không thể gửi đơn đăng ký. Vui lòng thử lại sau.",
+    "inviteLoaded": "Chúng tôi đã điền sẵn nội dung từ thư mời. Vui lòng kiểm tra và chỉnh sửa (đặc biệt là ngôn ngữ hỗ trợ) trước khi đăng ký.",
+    "inviteInvalid": "Liên kết mời không hợp lệ hoặc đã hết hạn. Vui lòng nhập nội dung để đăng ký."
   },
   "notFound": {
     "title": "Không tìm thấy trang",
@@ -97,5 +99,14 @@
   },
   "bot": {
     "title": "Về trình thu thập dữ liệu của chúng tôi"
+  },
+  "optOut": {
+    "title": "Từ chối nhận thư mời đăng tin",
+    "lead": "Nếu bạn không muốn nhận thư mời đăng tin, hãy nhấn nút bên dưới. Chúng tôi sẽ không gửi thư mời đến địa chỉ email này nữa.",
+    "submit": "Từ chối nhận",
+    "sending": "Đang gửi…",
+    "done": "Đã tiếp nhận yêu cầu từ chối. Chúng tôi sẽ không gửi thư mời nữa.",
+    "invalid": "Liên kết không hợp lệ. Vui lòng liên hệ qua thông tin trong email hoặc biểu mẫu liên hệ.",
+    "error": "Không thể xử lý yêu cầu. Vui lòng thử lại sau."
   }
 }

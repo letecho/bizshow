@@ -11,6 +11,7 @@ import {
 } from '@fss/shared/domain';
 import { ApproveCandidateSchema, HoldCandidateSchema, RejectCandidateSchema } from '@fss/shared/collector';
 import { DescriptionDraftSchema, type DescriptionDraft } from '@fss/shared/llm';
+import { OutreachOptOutInputSchema, SendOutreachSchema } from '@fss/shared/outreach';
 import { adminFetch } from '../../lib/adminApi';
 import { listingFormToInput } from '../../lib/listingForm';
 
@@ -193,4 +194,51 @@ export async function draftCandidateDescription(id: string): Promise<Description
   }
   const parsed = DescriptionDraftSchema.safeParse(body?.data?.description);
   return parsed.success ? { description: parsed.data } : { error: DRAFT_ERRORS.LLM_INVALID_OUTPUT };
+}
+
+const OUTREACH_ERRORS: Record<string, string> = {
+  OUTREACH_DISABLED: '掲載案内の送信は無効です（OUTREACH_ENABLED）。',
+  OUTREACH_BLOCKED: 'この事業者はブロックリストに登録されているため送信できません。',
+  OUTREACH_OPTED_OUT: 'このアドレスは受信拒否されているため送信できません。',
+  OUTREACH_ALREADY_SENT: 'このアドレスには既に案内を送信しています（同じ宛先へは再送しません）。',
+  OUTREACH_DAILY_LIMIT: '今日の送信上限に達しました。明日以降に送信してください。',
+  MAIL_FAILED: 'メールを送信できませんでした。時間をおいて再度お試しください。',
+  CONFLICT: 'この候補は処理済みです。',
+};
+
+export interface OutreachFormState {
+  error: string | null;
+  sent?: boolean;
+}
+
+/** 掲載案内の送信（F-118）。管理者が宛先と公表ページを確認して 1 件ずつ送る */
+export async function sendOutreach(candidateId: string, _prev: OutreachFormState, form: FormData): Promise<OutreachFormState> {
+  const parsed = SendOutreachSchema.safeParse({
+    to: String(form.get('to') ?? ''),
+    publishedUrl: String(form.get('publishedUrl') ?? ''),
+    confirmedNoOptOutNotice: form.get('confirmedNoOptOutNotice') === 'on',
+  });
+  if (!parsed.success) {
+    return { error: 'メールアドレス・公表ページの URL（https://）を入力し、受信拒否の表示が無いことを確認してください。' };
+  }
+  const res = await adminFetch(`/candidates/${encodeURIComponent(candidateId)}/outreach`, {
+    method: 'POST',
+    body: JSON.stringify(parsed.data),
+  });
+  if (res.status === 401 || res.status === 403) redirect('/admin/login');
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+    return { error: OUTREACH_ERRORS[body?.error?.code ?? ''] ?? body?.error?.message ?? `送信に失敗しました（${res.status}）。` };
+  }
+  revalidatePath(`/admin/candidates/${candidateId}`);
+  return { error: null, sent: true };
+}
+
+/** 受信拒否の登録（返信・電話などで受けた場合、F-118） */
+export async function registerOutreachOptOut(_prev: OutreachFormState, form: FormData): Promise<OutreachFormState> {
+  const parsed = OutreachOptOutInputSchema.safeParse({ email: String(form.get('email') ?? '') });
+  if (!parsed.success) return { error: 'メールアドレスを正しく入力してください。' };
+  const res = await adminFetch('/outreach/opt-outs', { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (!res.ok) return { error: await errorMessage(res) };
+  return { error: null, sent: true };
 }

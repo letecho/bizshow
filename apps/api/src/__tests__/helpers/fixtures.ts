@@ -5,6 +5,7 @@ import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepos
 import { createInMemoryBlocklistRepository } from '../../repositories/blocklistRepository';
 import { createInMemoryCandidateRepository } from '../../repositories/candidateRepository';
 import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
+import { createInMemoryOutreachRepository } from '../../repositories/outreachRepository';
 import { createLocalStorage } from '../../storage/storage';
 import {
   createInMemoryServiceRepository,
@@ -55,6 +56,8 @@ export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partia
     inquiryRepository: createInMemoryInquiryRepository(),
     listingRequestRepository: createInMemoryListingRequestRepository(),
     blocklistRepository: createInMemoryBlocklistRepository(),
+    outreachRepository: createInMemoryOutreachRepository(),
+    outreachConfig: { enabled: false, dailyLimit: 10, linkTtlDays: 30 },
     mailer: createLogMailer(() => {}),
     auth: { mode: 'dev' },
     storage: createLocalStorage({ apiBaseUrl: 'http://localhost:4000', secret: 'test-secret' }),

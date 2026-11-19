@@ -88,7 +88,9 @@
     "sent": "Thank you. We have received your application and will contact you after review.",
     "invalid": "Please check the required fields (category, prefecture, languages, English name and description, contact person and email).",
     "invalidFields": "Please check the following fields:",
-    "error": "Could not submit your application. Please try again later."
+    "error": "Could not submit your application. Please try again later.",
+    "inviteLoaded": "We have filled in the details from our invitation. Please check and correct them (especially the supported languages) before applying.",
+    "inviteInvalid": "The invitation link is invalid or has expired. Please fill in the details to apply."
   },
   "notFound": {
     "title": "Page not found",
@@ -97,5 +99,14 @@
   },
   "bot": {
     "title": "About our crawler"
+  },
+  "optOut": {
+    "title": "Unsubscribe from listing invitations",
+    "lead": "If you do not wish to receive listing invitations, press the button below. We will not send invitations to this email address again.",
+    "submit": "Unsubscribe",
+    "sending": "Sending…",
+    "done": "You have been unsubscribed. We will not send you any more invitations.",
+    "invalid": "This link is invalid. Please contact us using the details in the email or the contact form.",
+    "error": "We could not process your request. Please try again later."
   }
 }
