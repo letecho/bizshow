@@ -85,8 +85,19 @@ pnpm --filter collector crawl          # COLLECTOR_CRAWL_ENABLED=true のとき�
 1. 件数: `COLLECTOR_MAX_CANDIDATES_PER_RUN`（例: 100 → 500 → 2000）。レビューが追いつく量に合わせる
 2. 範囲: `COLLECTOR_TARGET_LANGUAGES`（例: `vi` → `vi,zh,en`）、`COLLECTOR_TARGET_LANGUAGE_MODE`
 3. クロール（F-115）: `COLLECTOR_CRAWL_ENABLED=true` にしてから `COLLECTOR_CRAWL_MAX_SITES_PER_RUN`・`COLLECTOR_CRAWL_MAX_PAGES` を上げる。`COLLECTOR_CRAWL_INTERVAL_SEC` は 5 秒未満にできません（サイトへの負荷のため固定）
-4. LLM（F-117）: `COLLECTOR_LLM_ENABLED=true`・`COLLECTOR_LLM_MODEL` を設定し、`COLLECTOR_LLM_MONTHLY_BUDGET_JPY` を 0 より大きくする
+4. LLM（F-117）: `COLLECTOR_LLM_ENABLED=true`・`COLLECTOR_LLM_MODEL`・`ANTHROPIC_API_KEY` を設定し、`COLLECTOR_LLM_MONTHLY_BUDGET_JPY` を 0 より大きくする（下の「LLM」）
 5. 生データの保存: `COLLECTOR_RAW_RETENTION_DAYS`
+
+## LLM（F-117）
+
+既定では使いません。`COLLECTOR_LLM_ENABLED=true`・`COLLECTOR_LLM_MONTHLY_BUDGET_JPY > 0`・`COLLECTOR_LLM_MODEL`・`ANTHROPIC_API_KEY` がすべて揃ったときだけ、次の 2 か所で呼びます。
+
+- **クロール時の空欄の補完**（`pnpm --filter collector crawl`）: 空欄（電話・住所・市区町村・英語の名称）のある候補について、その実行で取得したページの本文（タグ除去、合計 8,000 字まで）から 1 サイト 1 回だけ抽出します。出力は `CandidateExtractSchema` で検証し、通らなければ捨てます。電話・URL は元ページに書かれているものだけ採用し、既存の値は変えません。補完した項目は `llmFilledFields` に記録し、管理画面の候補詳細に「要確認」と表示します
+- **説明文の下書き**（管理画面の候補詳細「説明文の下書きを作成」）: 名称・カテゴリ・地域・対応言語だけから 4 言語の短い説明文を作り、空の説明欄に入れます。収集元の説明文・住所・連絡先は入力しません（転載しない）。保存は承認時
+
+プロンプトインジェクション対策として、ページ本文は `<page>` タグで区切ったデータとして渡し、本文内の指示に従わないことを system に書いています。出力は zod の検証に通ったものだけを使います。
+
+呼び出しごとに入出力トークン数と概算費用（`COLLECTOR_LLM_PRICE_IN_PER_MTOK_JPY` / `..._OUT_...`、円 / 100 万トークン）を `LlmUsage` に記録し、当月（日本時間）の累計が `COLLECTOR_LLM_MONTHLY_BUDGET_JPY` 以上になったら以降の呼び出しをスキップします（エラーにしない。クロールの結果の `llm.skippedByBudgetCount`、API は 409 `LLM_BUDGET_EXCEEDED`）。
 
 ## テスト
 

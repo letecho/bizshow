@@ -4,7 +4,11 @@ import {
   CandidateListQuerySchema,
   HoldCandidateSchema,
   RejectCandidateSchema,
+  buildDescriptionDraftRequest,
+  descriptionDraftFacts,
   diffCandidate,
+  parseDescriptionDraft,
+  type BudgetedLlm,
   isEntityInScope,
   type AdminCandidate,
   type AdminCandidateDetail,
@@ -17,6 +21,8 @@ import type { ServiceAdminRepository } from '../../repositories/serviceRepositor
 import { asyncHandler } from '../asyncHandler';
 import { invalidateServiceCache } from '../serviceCache';
 import { withSlugConflict } from './services';
+
+const isReviewable = (c: AdminCandidate) => c.status === 'pending' || c.status === 'on_hold';
 
 const notFound = (id: string) => new HttpError(404, 'NOT_FOUND', `Candidate not found: ${id}`);
 
@@ -35,11 +41,13 @@ export interface AdminCandidatesRouterOptions {
   services: ServiceAdminRepository;
   /** COLLECTOR_ENTITY_SCOPE。範囲外の種類（個人・不明など）は種類と根拠の入力なしに承認できない */
   entityScope: EntityScope;
+  /** 説明文の下書き（F-117）。COLLECTOR_LLM_* と ANTHROPIC_API_KEY が揃ったときだけ渡す */
+  llm?: BudgetedLlm;
   now?: () => Date;
 }
 
 /** /api/v1/admin/candidates: 掲載候補の一覧・詳細（既存掲載との差分）・承認・却下・保留（F-113） */
-export function adminCandidatesRouter({ candidates, services, entityScope, now = () => new Date() }: AdminCandidatesRouterOptions): Router {
+export function adminCandidatesRouter({ candidates, services, entityScope, llm, now = () => new Date() }: AdminCandidatesRouterOptions): Router {
   const router = Router();
 
   const found = async (id: string): Promise<AdminCandidate> => {
@@ -68,6 +76,7 @@ export function adminCandidatesRouter({ candidates, services, entityScope, now =
         matchedListing,
         diff: matchedListing ? diffCandidate(candidate.extracted, matchedListing) : [],
         entityApprovable: isEntityInScope(candidate.entityType, entityScope),
+        descriptionDraftAvailable: Boolean(llm) && isReviewable(candidate),
       };
       res.json({ data: detail });
     }),
@@ -79,7 +88,7 @@ export function adminCandidatesRouter({ candidates, services, entityScope, now =
       const id = String(req.params.id);
       const { entityOverride, ...input } = ApproveCandidateSchema.parse(req.body);
       const candidate = await found(id);
-      if (candidate.status !== 'pending' && candidate.status !== 'on_hold') {
+      if (!isReviewable(candidate)) {
         throw new HttpError(409, 'CONFLICT', `Candidate is already ${candidate.status}`);
       }
       let entity: ApproveCandidateArgs['entity'];
@@ -103,6 +112,29 @@ export function adminCandidatesRouter({ candidates, services, entityScope, now =
       if (!result) throw notFound(id);
       await invalidateServiceCache(...[result.previousSlug, result.listing.slug].filter((s): s is string => !!s));
       res.json({ data: result });
+    }),
+  );
+
+  // 承認画面の「説明文の下書きを作成」（F-117）。入力は候補の事実だけ（収集元の文章は渡さない）。保存はしない
+  router.post(
+    '/:id/description-draft',
+    asyncHandler(async (req, res) => {
+      if (!llm) throw new HttpError(409, 'LLM_DISABLED', 'LLM is not enabled');
+      const candidate = await found(String(req.params.id));
+      if (!isReviewable(candidate)) throw new HttpError(409, 'CONFLICT', `Candidate is already ${candidate.status}`);
+      let result;
+      try {
+        result = await llm.complete(buildDescriptionDraftRequest(descriptionDraftFacts(candidate.extracted)));
+      } catch {
+        // プロバイダのエラー内容（キー・リクエスト）は返さない
+        throw new HttpError(502, 'LLM_UNAVAILABLE', 'The LLM request failed');
+      }
+      if (result.status === 'skipped_budget') {
+        throw new HttpError(409, 'LLM_BUDGET_EXCEEDED', 'The monthly LLM budget has been reached');
+      }
+      const description = parseDescriptionDraft(result.text);
+      if (!description) throw new HttpError(502, 'LLM_INVALID_OUTPUT', 'The LLM output did not pass validation');
+      res.json({ data: { description } });
     }),
   );
 

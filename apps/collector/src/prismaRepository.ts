@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import type { CandidateExtract, LanguageEvidence, LocalizedText } from '@fss/shared';
+import type { LlmUsageStore } from '@fss/shared';
 import type { CollectorRepository } from './types';
 
 const json = (v: unknown) => v as Prisma.InputJsonValue;
@@ -39,6 +40,8 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
         matchType: input.matchType,
         matchedListingId: input.matchedListingId ?? null,
         score: input.score,
+        // 収集し直した抽出値には LLM の補完が含まれない
+        llmFilledFields: [],
       };
       const key = { sourceId: input.sourceId, sourceRecordId: input.sourceRecordId };
       const existing = await prisma.serviceCandidate.findUnique({
@@ -68,7 +71,7 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
     async loadCrawlTargets() {
       const rows = await prisma.serviceCandidate.findMany({
         where: { status: 'pending' },
-        select: { id: true, extracted: true, languageEvidence: true, hasTargetLanguage: true, score: true, createdAt: true },
+        select: { id: true, extracted: true, languageEvidence: true, hasTargetLanguage: true, score: true, llmFilledFields: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       });
       return rows.flatMap((r) => {
@@ -78,6 +81,8 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
           {
             id: r.id,
             websiteUrl,
+            extracted: r.extracted as unknown as CandidateExtract,
+            llmFilledFields: r.llmFilledFields,
             languageEvidence: (r.languageEvidence ?? []) as unknown as LanguageEvidence[],
             hasTargetLanguage: r.hasTargetLanguage,
             score: r.score,
@@ -92,6 +97,14 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
       const { count } = await prisma.serviceCandidate.updateMany({
         where: { id, status: 'pending' },
         data: { languageEvidence: json(update.languageEvidence), hasTargetLanguage: update.hasTargetLanguage, score: update.score },
+      });
+      return count > 0;
+    },
+
+    async updateCandidateExtraction(id, update) {
+      const { count } = await prisma.serviceCandidate.updateMany({
+        where: { id, status: 'pending' },
+        data: { extracted: json(update.extracted), llmFilledFields: update.llmFilledFields },
       });
       return count > 0;
     },
@@ -132,6 +145,19 @@ export function createPrismaCollectorRepository(prisma: PrismaClient): Collector
           };
         }),
       ];
+    },
+  };
+}
+
+/** LlmUsage テーブルへの使用量の記録（F-117） */
+export function createPrismaLlmUsageStore(prisma: PrismaClient): LlmUsageStore {
+  return {
+    async monthCostJpy(month) {
+      const { _sum } = await prisma.llmUsage.aggregate({ where: { month }, _sum: { costJpy: true } });
+      return _sum.costJpy ?? 0;
+    },
+    async record(entry) {
+      await prisma.llmUsage.create({ data: entry });
     },
   };
 }

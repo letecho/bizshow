@@ -8,7 +8,12 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'CONFLICT'
   | 'RATE_LIMITED'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  // LLM（F-117）: 無効・月額の上限到達・プロバイダの障害・出力が検証に通らない
+  | 'LLM_DISABLED'
+  | 'LLM_BUDGET_EXCEEDED'
+  | 'LLM_UNAVAILABLE'
+  | 'LLM_INVALID_OUTPUT';
 
 /** ルートから throw すると status / code がそのままレスポンスになる */
 export class HttpError extends Error {

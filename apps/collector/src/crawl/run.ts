@@ -2,9 +2,11 @@ import {
   hasTargetLanguageEvidence,
   isBlockedEntity,
   languageEvidenceScore,
+  type BudgetedLlm,
   type CollectorConfig,
   type LanguageEvidence,
 } from '@fss/shared';
+import { extractWithLlm, fillMissingFields, missingFillableFields } from '../llm/extract';
 import type { CollectorRepository, CrawlTarget } from '../types';
 import { Crawler, type SiteCrawlStatus } from './crawler';
 import type { Fetcher } from './fetcher';
@@ -30,6 +32,16 @@ export interface CrawlRunResult {
   requests: number;
   updatedCandidateCount: number;
   purgedRawCount: number;
+  /** LLM による空欄の補完（F-117）。LLM が無効なら undefined */
+  llm?: {
+    calls: number;
+    /** 当月の予算に達して呼ばなかったサイト数 */
+    skippedByBudgetCount: number;
+    /** 出力が検証に通らず捨てたサイト数 */
+    invalidCount: number;
+    /** 空欄を補完した候補数 */
+    filledCandidateCount: number;
+  };
   errorSample?: string;
 }
 
@@ -39,6 +51,8 @@ export interface RunCrawlOptions {
   /** 呼ばれる前に COLLECTOR_CRAWL_ENABLED を確認するため、無効時は作られない */
   createFetcher: () => Fetcher;
   store: CrawlStore;
+  /** LLM（F-117）。isLlmAvailable のときだけ渡す。渡さなければ LLM を呼ばない */
+  llm?: BudgetedLlm;
   now?: () => Date;
   sleep?: (ms: number) => Promise<void>;
 }
@@ -74,7 +88,7 @@ export function mergeWebsiteEvidence(evidence: readonly LanguageEvidence[], hint
  * COLLECTOR_CRAWL_ENABLED=false では何も取得しない。対象言語の根拠が無い候補を優先し、1 回の実行で
  * COLLECTOR_CRAWL_MAX_SITES_PER_RUN サイトまで。掲載（ServiceListing）や候補の掲載内容は変えない。
  */
-export async function runCrawl({ config, repo, createFetcher, store, now = () => new Date(), sleep }: RunCrawlOptions): Promise<CrawlRunResult> {
+export async function runCrawl({ config, repo, createFetcher, store, llm, now = () => new Date(), sleep }: RunCrawlOptions): Promise<CrawlRunResult> {
   const result: CrawlRunResult = {
     status: 'disabled',
     siteCount: 0,
@@ -90,6 +104,8 @@ export async function runCrawl({ config, repo, createFetcher, store, now = () =>
   };
   if (!config.crawl.enabled) return result;
   result.status = 'succeeded';
+  if (llm) result.llm = { calls: 0, skippedByBudgetCount: 0, invalidCount: 0, filledCandidateCount: 0 };
+  let llmBudgetReached = false;
 
   const state = await store.load();
   result.purgedRawCount = await store.purgeRaw(now(), config.raw.retentionDays);
@@ -174,6 +190,35 @@ export async function runCrawl({ config, repo, createFetcher, store, now = () =>
           score: c.score === 0 ? 0 : Math.max(0, Math.min(100, c.score - before + after)),
         });
         if (updated) result.updatedCandidateCount += 1;
+      }
+
+      // LLM: 空欄のある候補があり、この実行で取得したページがあるときだけ 1 サイト 1 回呼ぶ（F-117）
+      const needing = candidates.filter((c) => missingFillableFields(c.extracted).length > 0);
+      if (llm && result.llm && needing.length > 0 && site.pages.length > 0) {
+        if (llmBudgetReached) result.llm.skippedByBudgetCount += 1;
+        else {
+          const first = needing[0]!.extracted;
+          const outcome = await extractWithLlm(llm, { pages: site.pages, base: first }).catch(() => {
+            // API の障害などは候補を変えずに続ける（応答の内容はログに残さない）
+            if (errors.length < 3) errors.push(`${url.host}: llm request failed`);
+            return { status: 'invalid' as const };
+          });
+          if (outcome.status === 'skipped_budget') {
+            llmBudgetReached = true;
+            result.llm.skippedByBudgetCount += 1;
+          } else {
+            result.llm.calls += 1;
+            if (outcome.status === 'invalid') result.llm.invalidCount += 1;
+            else {
+              for (const c of needing) {
+                const { extracted, filled } = fillMissingFields(c.extracted, outcome.extract);
+                if (filled.length === 0) continue;
+                const llmFilledFields = [...new Set([...c.llmFilledFields, ...filled])];
+                if (await repo.updateCandidateExtraction(c.id, { extracted, llmFilledFields })) result.llm.filledCandidateCount += 1;
+              }
+            }
+          }
+        }
       }
     }
     await store.save(state);

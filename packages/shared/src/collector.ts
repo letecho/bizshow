@@ -10,6 +10,7 @@ import {
   type ServiceCategory,
   type SupportedLocale,
 } from './domain';
+import { LlmEnvSchema, type LlmSettings } from './llm';
 
 // データ収集基盤（F-111）: 設定パラメータ・事業者の種類の判定・抽出結果のスキーマ
 
@@ -118,9 +119,7 @@ const CollectorEnvSchema = z.object({
   COLLECTOR_CRAWL_INTERVAL_SEC: int(10, CRAWL_INTERVAL_MIN_SEC),
   COLLECTOR_RECRAWL_DAYS: int(30, 1),
   COLLECTOR_USER_AGENT: optionalString,
-  COLLECTOR_LLM_ENABLED: bool(false),
-  COLLECTOR_LLM_MONTHLY_BUDGET_JPY: int(0, 0),
-  COLLECTOR_LLM_MODEL: optionalString,
+  ...LlmEnvSchema.shape,
   CORPORATE_NUMBER_API_ID: optionalString,
   COLLECTOR_MATCH_NAME_THRESHOLD: z.preprocess(unsetIfEmpty, z.coerce.number().min(0).max(1).default(0.8)),
   COLLECTOR_STALE_DAYS: int(180, 1),
@@ -144,7 +143,8 @@ export interface CollectorConfig {
     recrawlDays: number;
     userAgent: string;
   };
-  llm: { enabled: boolean; monthlyBudgetJpy: number; model?: string };
+  /** LLM（F-117）。isLlmAvailable で利用可否を判定する */
+  llm: LlmSettings;
   corporateNumberApiId?: string;
   matchNameThreshold: number;
   staleDays: number;
@@ -200,6 +200,9 @@ export function loadCollectorConfig(env: Record<string, string | undefined>): Co
       enabled: e.COLLECTOR_LLM_ENABLED,
       monthlyBudgetJpy: e.COLLECTOR_LLM_MONTHLY_BUDGET_JPY,
       model: e.COLLECTOR_LLM_MODEL,
+      priceInPerMTokJpy: e.COLLECTOR_LLM_PRICE_IN_PER_MTOK_JPY,
+      priceOutPerMTokJpy: e.COLLECTOR_LLM_PRICE_OUT_PER_MTOK_JPY,
+      apiKey: e.ANTHROPIC_API_KEY,
     },
     corporateNumberApiId: e.CORPORATE_NUMBER_API_ID,
     matchNameThreshold: e.COLLECTOR_MATCH_NAME_THRESHOLD,
@@ -595,6 +598,8 @@ export interface AdminCandidate {
   matchedListingId: string | null;
   matchType: CandidateMatchType;
   score: number;
+  /** LLM で空欄を補完した項目（F-117: phone / address / city / name.en）。管理者の確認が必要 */
+  llmFilledFields?: string[];
   status: CandidateStatus;
   reviewNote: string | null;
   reviewedBy: string | null;
@@ -630,6 +635,8 @@ export interface AdminCandidateDetail extends AdminCandidate {
   diff: CandidateFieldDiff[];
   /** COLLECTOR_ENTITY_SCOPE で承認できる種類か（false なら entityOverride が必要） */
   entityApprovable: boolean;
+  /** 説明文の下書き（F-117）を作成できるか（LLM が有効で、レビュー前の候補） */
+  descriptionDraftAvailable: boolean;
 }
 
 const normalizeForDiff = (v: unknown): unknown => {

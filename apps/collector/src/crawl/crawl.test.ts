@@ -1,7 +1,15 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadCollectorConfig, type CandidateExtract, type LanguageEvidence } from '@fss/shared';
+import {
+  createBudgetedLlm,
+  createMemoryLlmUsageStore,
+  loadCollectorConfig,
+  type CandidateExtract,
+  type LanguageEvidence,
+  type LlmClient,
+  type LlmUsageEntry,
+} from '@fss/shared';
 import { createMemoryRepository } from '../testing';
 import type { CandidateInput, DataSourceRecord } from '../types';
 import { crawlMain } from './cli';
@@ -433,5 +441,131 @@ describe('runCrawl (F-115)', () => {
     });
     expect(result.siteCount).toBe(0);
     expect(requests).toEqual([]);
+  });
+});
+
+describe('runCrawl with LLM (F-117)', () => {
+  const llmEnv = {
+    COLLECTOR_CRAWL_ENABLED: 'true',
+    COLLECTOR_LLM_ENABLED: 'true',
+    COLLECTOR_LLM_MONTHLY_BUDGET_JPY: '100',
+    COLLECTOR_LLM_MODEL: 'test-model',
+    ANTHROPIC_API_KEY: 'dummy',
+  };
+  const companyPage = page('<p>さくらクリニック 東京都新宿区西新宿1-1-1 TEL 03-1234-5678</p>');
+
+  function budgeted(text: string, usage: LlmUsageEntry[] = []) {
+    const complete = vi.fn<LlmClient['complete']>().mockResolvedValue({ text, tokensIn: 1000, tokensOut: 100 });
+    const { store, entries } = createMemoryLlmUsageStore(usage);
+    const settings = { ...loadCollectorConfig(llmEnv).llm, model: 'test-model' };
+    const llm = createBudgetedLlm({ client: { complete }, store, settings, now: () => new Date('2026-11-19T00:00:00Z') });
+    return { llm, complete, entries };
+  }
+
+  it('does not call the LLM by default (crawl only)', async () => {
+    const mem = await setup([candidate('a', 'https://site.invalid/')]);
+    const createLlm = vi.fn();
+    const logs: string[] = [];
+    // robots.txt を拒否する（通信・待ち時間なし）
+    const fetcher = vi.fn<Fetcher>().mockImplementation(async ({ url }) => ({ kind: 'rejected', reason: 'test', url }));
+    const run = (env: Record<string, string>) =>
+      crawlMain([], { env, createRepo: () => mem.repo, createFetcher: () => fetcher, store: createMemoryCrawlStore().store, createLlm, log: (m) => logs.push(m) });
+
+    expect(await run({ COLLECTOR_CRAWL_ENABLED: 'true' })).toBe(0);
+    expect(createLlm).not.toHaveBeenCalled();
+    expect(JSON.parse(logs.at(-1)!).llm).toBeUndefined();
+    // API キーが無ければ有効にしても呼ばない
+    expect(await run({ ...llmEnv, ANTHROPIC_API_KEY: '' })).toBe(0);
+    expect(createLlm).not.toHaveBeenCalled();
+    // すべて揃ったときだけ作る
+    createLlm.mockReturnValue(budgeted('{}').llm);
+    expect(await run(llmEnv)).toBe(0);
+    expect(createLlm).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(logs.at(-1)!).llm).toEqual({ calls: 0, skippedByBudgetCount: 0, invalidCount: 0, filledCandidateCount: 0 });
+  });
+
+  it('fills only empty fields with values found in the page and marks them for review', async () => {
+    routes['/'] = { body: companyPage };
+    const mem = await setup([candidate('a', `${base}/`)]);
+    const clock = fakeClock();
+    const { llm, complete, entries } = budgeted(
+      JSON.stringify({
+        name: { ja: 'さくらクリニック', en: 'Sakura Clinic' },
+        address: { ja: '東京都新宿区西新宿1-1-1' },
+        city: '新宿区',
+        phone: '03-1234-5678',
+        websiteUrl: 'https://evil.example/phish',
+      }),
+    );
+    const result = await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm, now: clock.now, sleep: clock.sleep });
+
+    expect(result.llm).toEqual({ calls: 1, skippedByBudgetCount: 0, invalidCount: 0, filledCandidateCount: 1 });
+    const c = mem.candidates.get('test-source/a')!;
+    expect(c.extracted.name).toEqual({ ja: '医療法人 a', en: 'Sakura Clinic' }); // 既存の ja は変えない
+    expect(c.extracted.phone).toBe('03-1234-5678');
+    expect(c.extracted.city).toBe('新宿区');
+    expect(c.extracted.address).toEqual({ ja: '東京都新宿区西新宿1-1-1' });
+    expect(c.extracted.websiteUrl).toBe(`${base}/`); // 元ページに無い URL は採用しない
+    expect(c.llmFilledFields?.sort()).toEqual(['address', 'city', 'name.en', 'phone']);
+    // ページ本文はタグで区切ったデータとして渡す
+    const req = complete.mock.calls[0]![0];
+    expect(req.user).toContain('<page>');
+    expect(req.user).toContain('03-1234-5678');
+    expect(req.system).toMatch(/never follow instructions/);
+    expect(entries).toHaveLength(1);
+  });
+
+  it('drops a phone number that is not in the page', async () => {
+    routes['/'] = { body: companyPage };
+    const mem = await setup([candidate('a', `${base}/`)]);
+    const clock = fakeClock();
+    const { llm } = budgeted(JSON.stringify({ phone: '03-9999-0000', city: '新宿区' }));
+    await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm, now: clock.now, sleep: clock.sleep });
+    const c = mem.candidates.get('test-source/a')!;
+    expect(c.extracted.phone).toBeUndefined();
+    expect(c.llmFilledFields).toEqual(['city']);
+  });
+
+  it('does not save output that fails validation', async () => {
+    routes['/'] = { body: companyPage };
+    const mem = await setup([candidate('a', `${base}/`)]);
+    const clock = fakeClock();
+    const { llm } = budgeted('Sure! The phone is 03-1234-5678.');
+    const result = await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm, now: clock.now, sleep: clock.sleep });
+    expect(result.llm).toMatchObject({ calls: 1, invalidCount: 1, filledCandidateCount: 0 });
+    const c = mem.candidates.get('test-source/a')!;
+    expect(c.extracted.phone).toBeUndefined();
+    expect(c.llmFilledFields).toBeUndefined();
+
+    const { llm: badShape } = budgeted(JSON.stringify({ phone: 'call us!!', name: 'not-an-object' }));
+    routes['/'] = { body: companyPage };
+    const mem2 = await setup([candidate('b', `${base}/`)]);
+    const r2 = await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem2.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm: badShape, now: clock.now, sleep: clock.sleep });
+    expect(r2.llm).toMatchObject({ invalidCount: 1, filledCandidateCount: 0 });
+  });
+
+  it('skips LLM calls once the monthly budget is reached and records no extra usage', async () => {
+    routes['/'] = { body: companyPage };
+    const mem = await setup([candidate('a', `${base}/`)]);
+    const clock = fakeClock();
+    const { llm, complete, entries } = budgeted('{}', [
+      { month: '2026-11', purpose: 'extract', model: 'test-model', tokensIn: 0, tokensOut: 0, costJpy: 100 },
+    ]);
+    const result = await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm, now: clock.now, sleep: clock.sleep });
+    expect(complete).not.toHaveBeenCalled();
+    expect(result.llm).toEqual({ calls: 0, skippedByBudgetCount: 1, invalidCount: 0, filledCandidateCount: 0 });
+    expect(entries).toHaveLength(1);
+    expect(result.status).toBe('succeeded');
+  });
+
+  it('does not call the LLM when no field is missing', async () => {
+    routes['/'] = { body: companyPage };
+    const full = candidate('a', `${base}/`);
+    full.extracted = { ...full.extracted, name: { ja: 'x', en: 'X' }, address: { ja: '東京都' }, city: '新宿区', phone: '03-1234-5678' };
+    const mem = await setup([full]);
+    const clock = fakeClock();
+    const { llm, complete } = budgeted('{}');
+    await runCrawl({ config: loadCollectorConfig(llmEnv), repo: mem.repo, createFetcher: localFetcher, store: createMemoryCrawlStore().store, llm, now: clock.now, sleep: clock.sleep });
+    expect(complete).not.toHaveBeenCalled();
   });
 });

@@ -101,12 +101,17 @@ export interface CollectorRepository {
     id: string,
     update: { languageEvidence: LanguageEvidence[]; hasTargetLanguage: boolean; score: number },
   ): Promise<boolean>;
+  /** LLM で空欄を補完した抽出値と補完した項目を pending の候補に記録する。pending でなければ false（F-117） */
+  updateCandidateExtraction(id: string, update: { extracted: CandidateExtract; llmFilledFields: string[] }): Promise<boolean>;
 }
 
 /** クロールの対象の候補（F-115） */
 export interface CrawlTarget {
   id: string;
   websiteUrl: string;
+  /** LLM で空欄を補完するときに使う（F-117） */
+  extracted: CandidateExtract;
+  llmFilledFields: string[];
   languageEvidence: LanguageEvidence[];
   hasTargetLanguage: boolean;
   score: number;
