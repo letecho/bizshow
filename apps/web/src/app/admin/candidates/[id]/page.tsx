@@ -4,9 +4,11 @@ import {
   type AdminCandidateDetail,
   type CandidateDiffField,
 } from "@fss/shared/collector";
+import type { AdminOutreachStatus } from "@fss/shared/outreach";
 import { AdminHeader } from "../../../../components/admin/AdminHeader";
 import { CandidateReviewForm } from "../../../../components/admin/CandidateReviewForm";
 import { DescriptionDraftButton } from "../../../../components/admin/DescriptionDraftButton";
+import { OutreachPanel } from "../../../../components/admin/OutreachPanel";
 import { ServiceForm } from "../../../../components/admin/ServiceForm";
 import formStyles from "../../../../components/Form.module.css";
 import { adminFetch } from "../../../../lib/adminApi";
@@ -14,7 +16,9 @@ import { candidateFormDefaults } from "../../../../lib/candidateForm";
 import {
   approveCandidate,
   draftCandidateDescription,
+  registerOutreachOptOut,
   reviewCandidate,
+  sendOutreach,
 } from "../../actions";
 import styles from "../../admin.module.css";
 import {
@@ -70,6 +74,11 @@ export default async function CandidateDetailPage({ params }: Props) {
   if (res.status === 404) notFound();
   if (!res.ok) throw new Error(`Failed to load candidate: ${res.status}`);
   const { data: c } = (await res.json()) as { data: AdminCandidateDetail };
+  // 掲載案内（F-118）の状態。取得できなくても候補の確認はできるようにする
+  const outreachRes = await adminFetch(`/candidates/${encodeURIComponent(id)}/outreach`);
+  const outreach = outreachRes.ok
+    ? ((await outreachRes.json()) as { data: AdminOutreachStatus }).data
+    : null;
   const reviewable = c.status === "pending" || c.status === "on_hold";
   const title = c.extracted.name.ja ?? c.extracted.name.en ?? c.sourceRecordId;
 
@@ -263,6 +272,16 @@ export default async function CandidateDetailPage({ params }: Props) {
               )}
             </ServiceForm>
           </section>
+          {outreach && (
+            <section className={styles.card} aria-labelledby="candidate-outreach">
+              <h2 id="candidate-outreach">掲載案内</h2>
+              <OutreachPanel
+                status={outreach}
+                sendAction={sendOutreach.bind(null, c.id)}
+                optOutAction={registerOutreachOptOut}
+              />
+            </section>
+          )}
           <section className={styles.card} aria-labelledby="candidate-reject">
             <h2 id="candidate-reject">却下・保留</h2>
             <CandidateReviewForm

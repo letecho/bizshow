@@ -236,3 +236,41 @@ model LlmUsage {
 
   @@index([month])
 }
+
+enum OutreachStatus {
+  pending
+  sent
+  failed
+}
+
+/// 掲載案内の送信履歴（F-118）。管理者が候補ごとに 1 件ずつ送る。同じ宛先へは再送しない（failed を除く）
+model OutreachMessage {
+  id           String         @id @default(cuid())
+  candidateId  String
+  /// 宛先（小文字に正規化）。事業者が自ら公表しているアドレスのみ
+  email        String
+  /// 宛先が公表されているページの URL（管理者が確認したもの）
+  publishedUrl String
+  status       OutreachStatus @default(pending)
+  /// 送信した管理者（sub）
+  sentBy       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([email])
+  @@index([candidateId])
+  @@index([createdAt])
+}
+
+enum OutreachOptOutSource {
+  link
+  admin
+}
+
+/// 掲載案内の受信拒否（F-118）。登録済みのアドレスには送らない
+model OutreachOptOut {
+  id        String               @id @default(cuid())
+  email     String               @unique
+  source    OutreachOptOutSource
+  createdAt DateTime             @default(now())
+}

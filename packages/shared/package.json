@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./domain": "./src/domain.ts",
     "./collector": "./src/collector.ts",
-    "./llm": "./src/llm.ts"
+    "./llm": "./src/llm.ts",
+    "./outreach": "./src/outreach.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
