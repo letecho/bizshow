@@ -18,3 +18,5 @@ next-env.d.ts
 # ローカル画像アップロード（STORAGE_DRIVER=local）
 uploads/
 apps/api/uploads/
+collector-raw/
+apps/collector/collector-raw/
