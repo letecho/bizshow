@@ -6,6 +6,7 @@ import { getDictionary } from '../../../../i18n/dictionaries';
 import { localeNames } from '../../../../i18n/config';
 import { prefectureName } from '../../../../i18n/labels';
 import { getService } from '../../../../lib/api';
+import { googleMapsSearchUrl } from '../../../../lib/mapLink';
 import styles from './page.module.css';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -33,6 +34,10 @@ export default async function ServiceDetailPage({ params }: Props) {
 
   const result = await loadService(slug);
   if (!result.ok && result.status === 404) notFound();
+  const mapUrl =
+    result.ok && result.value.data.address
+      ? googleMapsSearchUrl(pickText(result.value.data.name, locale), pickText(result.value.data.address, locale))
+      : null;
 
   return (
     <main className={styles.main}>
@@ -68,7 +73,14 @@ export default async function ServiceDetailPage({ params }: Props) {
             {result.value.data.address && (
               <>
                 <dt>{t.address}</dt>
-                <dd>{pickText(result.value.data.address, locale)}</dd>
+                <dd>
+                  {pickText(result.value.data.address, locale)}
+                  {mapUrl && (
+                    <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
+                      {t.openInMap}
+                    </a>
+                  )}
+                </dd>
               </>
             )}
             {result.value.data.phone && (
@@ -105,3 +117,4 @@ export default async function ServiceDetailPage({ params }: Props) {
     </main>
   );
 }
+

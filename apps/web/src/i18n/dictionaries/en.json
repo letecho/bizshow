@@ -39,6 +39,7 @@
     "category": "Category",
     "area": "Area",
     "address": "Address",
+    "openInMap": "Open in Google Maps (new tab)",
     "phone": "Phone",
     "website": "Website",
     "languages": "Supported languages",

@@ -39,6 +39,7 @@
     "category": "类别",
     "area": "地区",
     "address": "地址",
+    "openInMap": "在 Google 地图中打开（新标签页）",
     "phone": "电话",
     "website": "网站",
     "languages": "支持语言",
