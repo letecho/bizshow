@@ -73,6 +73,7 @@
 .filters select {
   font: inherit;
   padding: 6px 8px;
+  max-width: 100%;
 }
 
 .tableWrap {
@@ -174,4 +175,27 @@
   max-height: 160px;
   object-fit: cover;
   border-radius: 6px;
+}
+
+/* 掲載候補の詳細（F-113） */
+.detailList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+}
+
+.detailList dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .detailList {
+    grid-template-columns: 1fr;
+  }
+
+  .detailList dt {
+    font-weight: 600;
+    margin-top: 8px;
+  }
 }

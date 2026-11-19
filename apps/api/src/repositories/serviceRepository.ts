@@ -6,6 +6,7 @@ import type {
   ServiceSearchQuery,
   ServiceSummary,
 } from '@fss/shared';
+import type { ListingProvenance } from './candidateRepository';
 
 export interface ServiceSearchResult {
   items: ServiceSummary[];
@@ -33,8 +34,9 @@ export interface ServiceAdminRepository {
   /** staleBefore: 収集した掲載のうち、最終確認日が無いかこの日時より前のものに絞る（F-116） */
   adminList(query: AdminServiceListQuery & { staleBefore?: Date }): Promise<{ items: AdminService[]; total: number }>;
   adminFindById(id: string): Promise<AdminService | null>;
-  create(input: AdminServiceInput): Promise<AdminService>;
-  update(id: string, input: AdminServiceInput): Promise<AdminService | null>;
+  /** provenance: 候補の承認で出典・確認日・法人番号を記録する（F-113 / F-116）。手入力では省略し既存の値を保つ */
+  create(input: AdminServiceInput, provenance?: ListingProvenance): Promise<AdminService>;
+  update(id: string, input: AdminServiceInput, provenance?: ListingProvenance): Promise<AdminService | null>;
   setPublished(id: string, isPublished: boolean): Promise<AdminService | null>;
   delete(id: string): Promise<AdminService | null>;
 }

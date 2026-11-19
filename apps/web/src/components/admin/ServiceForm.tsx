@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useActionState, useState, type FormEvent } from 'react';
+import { startTransition, useActionState, useState, type FormEvent, type ReactNode } from 'react';
 import {
   LISTING_TEXT_MAX,
   PREFECTURES,
@@ -20,9 +20,15 @@ import styles from '../../app/admin/admin.module.css';
 export function ServiceForm({
   action,
   service,
+  submitLabel = '保存',
+  children,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
-  service?: AdminService;
+  /** 初期値（掲載の編集、または候補の承認で抽出値から作った値） */
+  service?: Partial<AdminService>;
+  submitLabel?: string;
+  /** 送信ボタンの前に追加する入力（候補の承認で事業者の種類の確認など） */
+  children?: ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
   // form の action 属性に渡すと React 19 が送信後に入力をリセットするため、エラー時に入力を残せるよう onSubmit で呼ぶ
@@ -95,7 +101,7 @@ export function ServiceForm({
                 type="checkbox"
                 name="supportedLanguages"
                 value={l}
-                defaultChecked={service?.supportedLanguages.includes(l)}
+                defaultChecked={service?.supportedLanguages?.includes(l)}
               />{' '}
               {localeNames[l]}
             </label>
@@ -122,7 +128,7 @@ export function ServiceForm({
         <div key={l} role="tabpanel" hidden={tab !== l} className={formStyles.form}>
           <label className={formStyles.field}>
             <span>サービス名（{l}）{l === 'en' ? ' *' : ''}</span>
-            <input name={`name_${l}`} maxLength={LISTING_TEXT_MAX.name} defaultValue={service?.name[l] ?? ''} />
+            <input name={`name_${l}`} maxLength={LISTING_TEXT_MAX.name} defaultValue={service?.name?.[l] ?? ''} />
           </label>
           <label className={formStyles.field}>
             <span>説明（{l}）{l === 'en' ? ' *' : ''}</span>
@@ -130,7 +136,7 @@ export function ServiceForm({
               name={`description_${l}`}
               rows={6}
               maxLength={LISTING_TEXT_MAX.description}
-              defaultValue={service?.description[l] ?? ''}
+              defaultValue={service?.description?.[l] ?? ''}
             />
           </label>
           <label className={formStyles.field}>
@@ -149,13 +155,14 @@ export function ServiceForm({
       <label>
         <input type="checkbox" name="isPublished" defaultChecked={service?.isPublished ?? false} /> 公開する
       </label>
+      {children}
       {state.error && (
         <p role="alert" className={formStyles.error}>
           {state.error}
         </p>
       )}
       <button type="submit" className={formStyles.submit} disabled={pending}>
-        {pending ? '保存中…' : '保存'}
+        {pending ? '保存中…' : submitLabel}
       </button>
     </form>
   );

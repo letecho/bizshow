@@ -9,6 +9,7 @@ import {
   UploadRequestSchema,
   type UploadTicket,
 } from '@fss/shared/domain';
+import { ApproveCandidateSchema, HoldCandidateSchema, RejectCandidateSchema } from '@fss/shared/collector';
 import { adminFetch } from '../../lib/adminApi';
 import { listingFormToInput } from '../../lib/listingForm';
 
@@ -19,7 +20,7 @@ export interface FormState {
 /** API エラーを画面表示用の文言にする。未認証はログインへ */
 async function errorMessage(res: Response): Promise<string> {
   if (res.status === 401 || res.status === 403) redirect('/admin/login');
-  if (res.status === 409) return 'この slug は既に使われています（または申請は処理済みです）。';
+  if (res.status === 409) return 'この slug は既に使われています（または申請・候補は処理済みです）。';
   const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
   return body?.error?.message ?? `保存に失敗しました（${res.status}）。`;
 }
@@ -124,4 +125,41 @@ export async function deleteBlockEntry(id: string): Promise<void> {
   const res = await adminFetch(`/blocklist/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!res.ok && res.status !== 404) throw new Error(await errorMessage(res));
   revalidatePath('/admin/blocklist');
+}
+
+/** 掲載候補の承認（F-113）。管理者が確認・編集した値で掲載を作成（update 候補は既存を更新）する */
+export async function approveCandidate(id: string, _prev: FormState, form: FormData): Promise<FormState> {
+  const entityType = String(form.get('entityType') ?? '');
+  const parsed = ApproveCandidateSchema.safeParse({
+    ...listingFormToInput(form),
+    slug: String(form.get('slug') ?? ''),
+    isPublished: form.get('isPublished') === 'on',
+    imageKey: String(form.get('imageKey') ?? ''),
+    ...(entityType && { entityOverride: { entityType, evidence: String(form.get('entityEvidence') ?? '') } }),
+  });
+  if (!parsed.success) {
+    return {
+      error:
+        parsed.error.issues.some((i) => i.path[0] === 'entityOverride')
+          ? '事業者の種類を変更する場合は、確認した根拠（法人番号など）を入力してください。'
+          : INVALID,
+    };
+  }
+  const res = await adminFetch(`/candidates/${encodeURIComponent(id)}/approve`, { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (!res.ok) return { error: await errorMessage(res) };
+  revalidatePath('/admin/candidates');
+  revalidatePath('/admin');
+  redirect('/admin/candidates');
+}
+
+/** 却下・保留（理由・メモは任意、500 字まで） */
+export async function reviewCandidate(id: string, decision: 'reject' | 'hold', _prev: FormState, form: FormData): Promise<FormState> {
+  const text = String(form.get('note') ?? '');
+  const parsed =
+    decision === 'reject' ? RejectCandidateSchema.safeParse({ reason: text }) : HoldCandidateSchema.safeParse({ note: text });
+  if (!parsed.success) return { error: '理由・メモは 500 字以内で入力してください。' };
+  const res = await adminFetch(`/candidates/${encodeURIComponent(id)}/${decision}`, { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (!res.ok) return { error: await errorMessage(res) };
+  revalidatePath('/admin/candidates');
+  redirect('/admin/candidates');
 }

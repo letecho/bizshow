@@ -1,13 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { appCache, loadStaleDays } from '@fss/shared';
+import { appCache, loadEntityScope, loadStaleDays, type EntityScope } from '@fss/shared';
 import { accessLog } from './middleware/accessLog';
 import { requireAdmin, type AuthOptions } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 import { globalRateLimit, parseTrustProxy, type RateLimitOptions } from './middleware/rateLimit';
 import type { Mailer } from './mail/mailer';
 import type { BlocklistRepository } from './repositories/blocklistRepository';
+import type { CandidateRepository } from './repositories/candidateRepository';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
 import type { ServiceAdminRepository, ServiceRepository } from './repositories/serviceRepository';
@@ -24,6 +25,10 @@ export interface AppOptions {
   listingRequestRepository: ListingRequestRepository;
   /** 収集・クロールのブロックリスト（F-116） */
   blocklistRepository: BlocklistRepository;
+  /** 掲載候補のレビュー（F-113） */
+  candidateRepository: CandidateRepository;
+  /** 候補の承認で認める事業者の種類（既定: env COLLECTOR_ENTITY_SCOPE、未設定 corporate_public） */
+  entityScope?: EntityScope;
   /** 管理画面の「未確認の掲載」の基準日数（既定: env COLLECTOR_STALE_DAYS、未設定 180） */
   staleDays?: number;
   mailer: Mailer;
@@ -99,6 +104,8 @@ export function createApp(options: AppOptions) {
       storage: options.storage,
       blocklist: options.blocklistRepository,
       staleDays: options.staleDays ?? loadStaleDays(process.env),
+      candidates: options.candidateRepository,
+      entityScope: options.entityScope ?? loadEntityScope(process.env),
     }),
   );
 

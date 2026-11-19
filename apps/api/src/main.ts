@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { createApp } from './app';
 import { createMailerFromEnv } from './mail/mailer';
 import { createAuthOptionsFromEnv } from './middleware/auth';
+import { createPrismaCandidateRepository } from './repositories/prismaCandidateRepository';
 import { createPrismaBlocklistRepository } from './repositories/prismaBlocklistRepository';
 import { createPrismaInquiryRepository } from './repositories/prismaInquiryRepository';
 import { createPrismaListingRequestRepository } from './repositories/prismaListingRequestRepository';
@@ -18,6 +19,7 @@ async function main() {
     inquiryRepository: createPrismaInquiryRepository(prisma),
     listingRequestRepository: createPrismaListingRequestRepository(prisma),
     blocklistRepository: createPrismaBlocklistRepository(prisma),
+    candidateRepository: createPrismaCandidateRepository(prisma),
     mailer: createMailerFromEnv(),
     auth: await createAuthOptionsFromEnv(),
     storage,

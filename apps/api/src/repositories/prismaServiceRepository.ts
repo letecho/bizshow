@@ -12,6 +12,7 @@ import type {
 import { parseListingSources } from '@fss/shared';
 import { buildSearchText } from '../db/searchText';
 import { imageUrlFor } from '../storage/storage';
+import type { ListingProvenance } from './candidateRepository';
 import { SlugConflictError, type ServiceAdminRepository, type ServiceRepository } from './serviceRepository';
 
 export function toServiceSummary(row: ServiceListing): ServiceSummary {
@@ -49,8 +50,18 @@ export function toAdminService(row: ServiceListing): AdminService {
   };
 }
 
+/** 出典・確認日・法人番号（候補の承認時のみ。手入力の保存では既存の値を変えない） */
+export function provenanceData(provenance?: ListingProvenance) {
+  if (!provenance) return {};
+  return {
+    sources: provenance.sources as unknown as Prisma.InputJsonValue,
+    lastVerifiedAt: new Date(provenance.lastVerifiedAt),
+    ...(provenance.corporateNumber && { corporateNumber: provenance.corporateNumber }),
+  };
+}
+
 /** PUT は全項目置き換えのため、未入力の任意項目は null にする */
-function toData(input: AdminServiceInput) {
+export function toData(input: AdminServiceInput) {
   return {
     ...input,
     city: input.city ?? null,
@@ -62,7 +73,7 @@ function toData(input: AdminServiceInput) {
   };
 }
 
-const isPrismaError = (err: unknown, code: string) =>
+export const isPrismaError = (err: unknown, code: string) =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === code;
 
 /** unique 違反 → SlugConflictError、対象なし → null */
@@ -130,12 +141,14 @@ export function createPrismaServiceRepository(prisma: PrismaClient): ServiceRepo
       return row ? toAdminService(row) : null;
     },
 
-    async create(input) {
-      return (await write(input.slug, () => prisma.serviceListing.create({ data: toData(input) })))!;
+    async create(input, provenance) {
+      const data = { ...toData(input), ...provenanceData(provenance) };
+      return (await write(input.slug, () => prisma.serviceListing.create({ data })))!;
     },
 
-    update(id, input) {
-      return write(input.slug, () => prisma.serviceListing.update({ where: { id }, data: toData(input) }));
+    update(id, input, provenance) {
+      const data = { ...toData(input), ...provenanceData(provenance) };
+      return write(input.slug, () => prisma.serviceListing.update({ where: { id }, data }));
     },
 
     setPublished(id, isPublished) {

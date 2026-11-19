@@ -9,6 +9,9 @@ import {
   isEntityInScope,
   loadCollectorConfig,
   loadStaleDays,
+  loadEntityScope,
+  diffCandidate,
+  CandidateListQuerySchema,
   type CandidateExtract,
 } from './index';
 
@@ -282,5 +285,50 @@ describe('loadStaleDays (F-116)', () => {
     // 他の収集設定が不正でも影響を受けない
     expect(loadStaleDays({ COLLECTOR_STALE_DAYS: '30', COLLECTOR_CATEGORIES: 'nope' })).toBe(30);
     expect(() => loadStaleDays({ COLLECTOR_STALE_DAYS: '0' })).toThrow(CollectorConfigError);
+  });
+});
+
+describe('candidate review helpers (F-113)', () => {
+  it('reads COLLECTOR_ENTITY_SCOPE alone with the default corporate_public', () => {
+    expect(loadEntityScope({})).toBe('corporate_public');
+    expect(loadEntityScope({ COLLECTOR_ENTITY_SCOPE: 'all', COLLECTOR_CATEGORIES: 'nope' })).toBe('all');
+    expect(() => loadEntityScope({ COLLECTOR_ENTITY_SCOPE: 'everyone' })).toThrow(CollectorConfigError);
+  });
+
+  it('parses the candidate list query with defaults', () => {
+    expect(CandidateListQuerySchema.parse({})).toEqual({ status: 'pending', page: 1, limit: 50 });
+    expect(CandidateListQuerySchema.parse({ targetLang: '1', minScore: '70', category: '' })).toMatchObject({ targetLang: true, minScore: 70 });
+    expect(CandidateListQuerySchema.safeParse({ status: 'deleted' }).success).toBe(false);
+  });
+
+  it('diffs only the fields the candidate has and that differ', () => {
+    const listing = {
+      category: 'medical',
+      prefecture: 'tokyo',
+      city: null,
+      supportedLanguages: ['en', 'ja'],
+      name: { en: 'Clinic', ja: 'クリニック' },
+      description: { en: 'd' },
+      address: null,
+      phone: '03-0000-0000',
+      websiteUrl: null,
+    } as never;
+    const diff = diffCandidate(
+      {
+        category: 'medical',
+        prefecture: 'tokyo',
+        supportedLanguages: ['ja', 'en'],
+        name: { ja: 'クリニック' },
+        description: { en: 'changed' },
+        phone: '03-1111-1111',
+        websiteUrl: 'https://example.com/',
+      },
+      listing,
+    );
+    expect(diff).toEqual([
+      { field: 'description', current: { en: 'd' }, candidate: { en: 'changed' } },
+      { field: 'phone', current: '03-0000-0000', candidate: '03-1111-1111' },
+      { field: 'websiteUrl', current: null, candidate: 'https://example.com/' },
+    ]);
   });
 });
