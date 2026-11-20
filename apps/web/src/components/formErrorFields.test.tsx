@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { isValidElement, type ReactNode } from 'react';
-import { InquiryInputSchema, ListingRequestInputSchema, SUPPORTED_LOCALES } from '@fss/shared/domain';
+import { INITIAL_CATEGORIES, InquiryInputSchema, ListingRequestInputSchema, SUPPORTED_LOCALES } from '@fss/shared/domain';
 import { getDictionary } from '../i18n/dictionaries';
 import { invalidFieldNames } from '../lib/formErrors';
 
@@ -51,7 +51,7 @@ describe('invalidFieldNames', () => {
 
   it('掲載申請: 多言語の入力欄は {field}_{locale} になる', () => {
     const r = ListingRequestInputSchema.safeParse({
-      category: 'legal',
+      categories: ['legal'],
       prefecture: 'tokyo',
       supportedLanguages: [],
       name: { ja: '名前' },
@@ -86,24 +86,26 @@ describe('ContactForm のエラー表示', () => {
 describe('ApplyForm のエラー表示', () => {
   it('多言語の項目は言語名つきで示し、チェックボックス群も aria-invalid になる', () => {
     const dict = getDictionary('en');
-    preset = { status: 'invalid', invalid: ['supportedLanguages', 'name_en', 'contactEmail'] };
-    const els = flatten(ApplyForm({ locale: 'en', dict }));
+    preset = { status: 'invalid', invalid: ['categories', 'supportedLanguages', 'name_en', 'contactEmail'] };
+    const els = flatten(ApplyForm({ locale: 'en', dict, categories: INITIAL_CATEGORIES }));
     preset = undefined;
 
     const alert = els.find((e) => e.props.role === 'alert')!;
     const message = text(alert.props.children);
     expect(message).toContain(dict.apply.invalidFields);
     expect(message).toContain(dict.detail.languages);
+    expect(message).toContain(dict.search.category);
     expect(message).toContain(`${dict.apply.serviceName} (English)`);
     expect(message).toContain(dict.apply.contactEmail);
     expect(message).not.toContain(dict.apply.contactName);
     const invalid = invalidControls(els);
     expect(invalid.filter((n) => n === 'supportedLanguages')).toHaveLength(SUPPORTED_LOCALES.length);
-    expect(new Set(invalid)).toEqual(new Set(['supportedLanguages', 'name_en', 'contactEmail']));
+    expect(invalid.filter((n) => n === 'categories')).toHaveLength(INITIAL_CATEGORIES.length);
+    expect(new Set(invalid)).toEqual(new Set(['categories', 'supportedLanguages', 'name_en', 'contactEmail']));
   });
 
   it('エラーが無いときは aria-invalid を付けない', () => {
-    const els = flatten(ApplyForm({ locale: 'en', dict: getDictionary('en') }));
+    const els = flatten(ApplyForm({ locale: 'en', dict: getDictionary('en'), categories: INITIAL_CATEGORIES }));
     expect(invalidControls(els)).toEqual([]);
     expect(els.find((e) => e.props.role === 'alert')).toBeUndefined();
   });

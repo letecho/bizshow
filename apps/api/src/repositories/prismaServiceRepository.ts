@@ -4,7 +4,6 @@ import type {
   AdminServiceInput,
   LocalizedText,
   PrefectureCode,
-  ServiceCategory,
   ServiceDetail,
   ServiceSummary,
   SupportedLocale,
@@ -19,7 +18,7 @@ export function toServiceSummary(row: ServiceListing): ServiceSummary {
   return {
     id: row.id,
     slug: row.slug,
-    category: row.category as ServiceCategory,
+    categories: row.categories,
     prefecture: row.prefecture as PrefectureCode,
     city: row.city,
     supportedLanguages: row.supportedLanguages as SupportedLocale[],
@@ -92,7 +91,7 @@ export function createPrismaServiceRepository(prisma: PrismaClient): ServiceRepo
     async search({ q, category, prefecture, lang, page, limit }) {
       const where: Prisma.ServiceListingWhereInput = {
         isPublished: true,
-        category,
+        ...(category && { categories: { has: category } }),
         prefecture,
         ...(lang && { supportedLanguages: { has: lang } }),
         ...(q && { searchText: { contains: q.toLowerCase(), mode: 'insensitive' } }),

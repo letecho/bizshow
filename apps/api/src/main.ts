@@ -3,6 +3,7 @@ import { createAnthropicLlmClient, createBudgetedLlm, isLlmAvailable, loadLlmSet
 import { createApp } from './app';
 import { createMailerFromEnv } from './mail/mailer';
 import { createAuthOptionsFromEnv } from './middleware/auth';
+import { createPrismaCategoryRepository } from './repositories/prismaCategoryRepository';
 import { createPrismaCandidateRepository } from './repositories/prismaCandidateRepository';
 import { createPrismaBlocklistRepository } from './repositories/prismaBlocklistRepository';
 import { createPrismaLlmUsageStore } from './repositories/prismaLlmUsageStore';
@@ -28,6 +29,7 @@ async function main() {
     : undefined;
   const app = createApp({
     serviceRepository: createPrismaServiceRepository(prisma),
+    categoryRepository: createPrismaCategoryRepository(prisma),
     inquiryRepository: createPrismaInquiryRepository(prisma),
     listingRequestRepository: createPrismaListingRequestRepository(prisma),
     blocklistRepository: createPrismaBlocklistRepository(prisma),

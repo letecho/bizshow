@@ -11,7 +11,7 @@ import { buildSearchText } from './searchText';
 /** デモ用シードデータ（架空の事業者。電話番号・URLはダミー） */
 export interface SeedListing {
   slug: string;
-  category: ServiceCategory;
+  categories: ServiceCategory[];
   prefecture: PrefectureCode;
   supportedLanguages: SupportedLocale[];
   name: LocalizedText;
@@ -122,7 +122,7 @@ function buildSeedListings(): SeedListing[] {
       };
       return {
         slug: `${category}-${pref.code}`,
-        category,
+        categories: [category],
         prefecture: pref.code,
         supportedLanguages: LANGUAGE_SETS[i % LANGUAGE_SETS.length],
         name,

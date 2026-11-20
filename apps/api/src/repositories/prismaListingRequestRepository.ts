@@ -5,7 +5,6 @@ import type { ListingRequestRecord, ListingRequestRepository } from './listingRe
 export function toListingRequestRecord(row: ListingRequest): ListingRequestRecord {
   return {
     ...row,
-    category: row.category as ListingRequestInput['category'],
     prefecture: row.prefecture as ListingRequestInput['prefecture'],
     supportedLanguages: row.supportedLanguages as ListingRequestInput['supportedLanguages'],
     city: row.city ?? undefined,

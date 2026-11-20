@@ -23,7 +23,7 @@ describe('candidateFormDefaults (F-113)', () => {
   it('builds defaults for a new listing from the extracted values (unpublished)', () => {
     expect(candidateFormDefaults(detail())).toMatchObject({
       slug: 'medical-13-0001-tokyo',
-      category: 'medical',
+      categories: ['medical'],
       name: { ja: '医療法人 さくら' },
       description: {},
       address: null,
@@ -36,6 +36,7 @@ describe('candidateFormDefaults (F-113)', () => {
   it('overlays the extracted values on the matched listing for an update candidate', () => {
     const matchedListing = {
       slug: 'sakura-clinic',
+      categories: ['daily', 'medical'],
       city: '新宿区',
       phone: '03-0000-0000',
       websiteUrl: 'https://sakura.example/',
@@ -49,6 +50,7 @@ describe('candidateFormDefaults (F-113)', () => {
     } as unknown as AdminCandidateDetail['matchedListing'];
     expect(candidateFormDefaults(detail({ matchedListing }))).toMatchObject({
       slug: 'sakura-clinic',
+      categories: ['daily', 'medical'],
       city: '新宿区',
       phone: '03-1111-1111',
       websiteUrl: 'https://sakura.example/',
@@ -58,5 +60,18 @@ describe('candidateFormDefaults (F-113)', () => {
       address: { en: 'Shinjuku' },
       isPublished: true,
     });
+  });
+
+  it("keeps the matched listing's categories and appends the candidate's category when missing (F-121)", () => {
+    const listing = (categories: string[]) =>
+      ({ ...detail().extracted, categories, name: { en: 'A' }, description: { en: 'B' } }) as unknown as AdminCandidateDetail['matchedListing'];
+    expect(candidateFormDefaults(detail({ matchedListing: listing(['legal']) })).categories).toEqual(['legal', 'medical']);
+    expect(candidateFormDefaults(detail({ matchedListing: listing(['a', 'b', 'c', 'd', 'e']) })).categories).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+    ]);
   });
 });

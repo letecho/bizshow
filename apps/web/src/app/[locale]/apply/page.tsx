@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { isSupportedLocale } from '@fss/shared/domain';
 import { ApplyForm } from '../../../components/ApplyForm';
 import { getDictionary } from '../../../i18n/dictionaries';
-import { getListingInvite } from '../../../lib/api';
+import { getCategories, getListingInvite } from '../../../lib/api';
 import styles from './page.module.css';
 
 type Props = {
@@ -27,7 +27,7 @@ export default async function ApplyPage({ params, searchParams }: Props) {
   // 掲載案内（F-118）のリンクから来たときは候補の内容を事前入力する
   const raw = (await searchParams)?.invite;
   const token = Array.isArray(raw) ? raw[0] : raw;
-  const invite = token ? await getListingInvite(token) : undefined;
+  const [invite, categories] = await Promise.all([token ? getListingInvite(token) : undefined, getCategories()]);
   const initial = invite?.ok ? invite.value.data : undefined;
 
   return (
@@ -39,7 +39,7 @@ export default async function ApplyPage({ params, searchParams }: Props) {
           {initial ? dict.apply.inviteLoaded : dict.apply.inviteInvalid}
         </p>
       )}
-      <ApplyForm locale={locale} dict={dict} initial={initial} />
+      <ApplyForm locale={locale} dict={dict} initial={initial} categories={categories} />
     </main>
   );
 }

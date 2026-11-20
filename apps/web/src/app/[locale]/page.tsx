@@ -5,7 +5,7 @@ import { SearchForm } from '../../components/SearchForm';
 import { ServiceCard } from '../../components/ServiceCard';
 import { getDictionary } from '../../i18n/dictionaries';
 import { format } from '../../i18n/labels';
-import { searchServices, toQueryString } from '../../lib/api';
+import { getCategories, searchServices, toQueryString } from '../../lib/api';
 import styles from './page.module.css';
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -24,7 +24,7 @@ export default async function HomePage({
   const dict = getDictionary(locale);
   const sp = await searchParams;
   const query = toQueryString(sp);
-  const result = await searchServices(query);
+  const [result, categories] = await Promise.all([searchServices(query), getCategories()]);
 
   return (
     <main className={styles.main}>
@@ -34,6 +34,7 @@ export default async function HomePage({
       <SearchForm
         locale={locale}
         dict={dict}
+        categories={categories}
         values={{ q: first(sp.q), category: first(sp.category), prefecture: first(sp.prefecture), lang: first(sp.lang) }}
       />
 
@@ -49,7 +50,7 @@ export default async function HomePage({
             <p className={styles.count}>{format(dict.search.results, { total: result.value.meta.total })}</p>
             <div className={styles.grid}>
               {result.value.data.map((service) => (
-                <ServiceCard key={service.id} service={service} locale={locale} dict={dict} />
+                <ServiceCard key={service.id} service={service} locale={locale} dict={dict} categories={categories} />
               ))}
             </div>
             <Pagination

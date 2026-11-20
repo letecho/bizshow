@@ -5,7 +5,7 @@ import { createInMemoryServiceRepository, type InMemoryServiceRecord } from '../
 import { testApp } from './helpers/fixtures';
 
 const application = {
-  category: 'telecom',
+  categories: ['telecom'],
   prefecture: 'fukuoka',
   supportedLanguages: ['ja', 'en', 'vi'],
   name: { en: 'Fukuoka SIM Shop', vi: 'Cửa hàng SIM Fukuoka' },
@@ -44,7 +44,7 @@ describe('admin listing requests API', () => {
     expect(res.body.data.request.status).toBe('approved');
     expect(res.body.data.service).toMatchObject({
       slug: 'fukuoka-sim-shop',
-      category: 'telecom',
+      categories: ['telecom'],
       name: { en: 'Fukuoka SIM Shop', vi: 'Cửa hàng SIM Fukuoka' },
       isPublished: true,
     });

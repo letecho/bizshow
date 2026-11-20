@@ -39,7 +39,7 @@ function candidate(
 
 const approval = {
   slug: 'tokyo-clinic',
-  category: 'medical',
+  categories: ['medical'],
   prefecture: 'tokyo',
   supportedLanguages: ['ja', 'vi'],
   name: { en: 'Tokyo Clinic', ja: '東京クリニック' },
@@ -103,7 +103,7 @@ describe('admin candidates API (F-113)', () => {
   it('shows the diff with the matched listing and updates it on approval (update candidate)', async () => {
     const existing = makeRecord({ slug: 'existing-clinic', phone: '03-0000-0000', sources: [{ attribution: 'Other', url: null }] });
     const { app, listings } = setup(
-      [candidate({ id: 'u1', matchType: 'update', matchedListingId: existing.id, extracted: { phone: '03-1111-1111', category: existing.category } })],
+      [candidate({ id: 'u1', matchType: 'update', matchedListingId: existing.id, extracted: { phone: '03-1111-1111', category: existing.categories[0] as 'medical' } })],
       [existing],
     );
     const detail = await request(app).get('/api/v1/admin/candidates/u1');
@@ -143,6 +143,21 @@ describe('admin candidates API (F-113)', () => {
     expect(held.body.data).toMatchObject({ status: 'on_hold', reviewNote: '電話で確認中' });
     expect((await request(app).post('/api/v1/admin/candidates/h/hold').send({})).status).toBe(409);
     expect((await request(app).post('/api/v1/admin/candidates/h/approve').send(approval)).status).toBe(200);
+  });
+
+  it('approves with multiple categories and rejects unknown category codes with 400 (F-121)', async () => {
+    const { app, listings } = setup([candidate({ id: 'm' }), candidate({ id: 'u' })]);
+    const unknown = await request(app)
+      .post('/api/v1/admin/candidates/u/approve')
+      .send({ ...approval, slug: 'unknown-cat', categories: ['medical', 'no-such-category'] });
+    expect(unknown.status).toBe(400);
+    expect(unknown.body.error.code).toBe('VALIDATION_ERROR');
+    expect(listings).toHaveLength(1);
+    const multi = await request(app)
+      .post('/api/v1/admin/candidates/m/approve')
+      .send({ ...approval, slug: 'multi-cat', categories: ['medical', 'daily'] });
+    expect(multi.status).toBe(200);
+    expect(multi.body.data.listing.categories).toEqual(['medical', 'daily']);
   });
 
   it('validates the approval input (en name and description are required) and slug conflicts', async () => {

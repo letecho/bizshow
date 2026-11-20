@@ -52,17 +52,17 @@ export function createInMemoryServiceRepository(
       const needle = q?.toLowerCase();
       const matched = records
         .filter((r) => r.isPublished)
-        .filter((r) => !category || r.category === category)
+        .filter((r) => !category || r.categories.includes(category))
         .filter((r) => !prefecture || r.prefecture === prefecture)
         .filter((r) => !lang || r.supportedLanguages.includes(lang))
         .filter((r) => !needle || r.searchText.toLowerCase().includes(needle))
         .sort(byUpdatedDesc);
       const items = matched
         .slice((page - 1) * limit, page * limit)
-        .map(({ id, slug, category, prefecture, city, supportedLanguages, name }) => ({
+        .map(({ id, slug, categories, prefecture, city, supportedLanguages, name }) => ({
           id,
           slug,
-          category,
+          categories,
           prefecture,
           city,
           supportedLanguages,

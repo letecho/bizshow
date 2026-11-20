@@ -12,7 +12,8 @@ describe('listingFormToInput', () => {
   it('builds a valid listing request from form fields', () => {
     const input = listingFormToInput(
       formData([
-        ['category', 'medical'],
+        ['categories', 'work'],
+        ['categories', 'legal'],
         ['prefecture', 'tokyo'],
         ['city', ''],
         ['supportedLanguages', 'ja'],
@@ -31,6 +32,7 @@ describe('listingFormToInput', () => {
     expect(input.address).toBeUndefined();
     const parsed = ListingRequestInputSchema.parse(input);
     expect(parsed).toMatchObject({
+      categories: ['work', 'legal'],
       supportedLanguages: ['ja', 'vi'],
       name: { en: 'Clinic', vi: 'Phòng khám' },
       contactEmail: 'suzuki@example.com',

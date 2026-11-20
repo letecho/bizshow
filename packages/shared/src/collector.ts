@@ -663,9 +663,15 @@ const normalizeForDiff = (v: unknown): unknown => {
 
 /** 既存掲載と候補の差分（候補に値がある項目のうち、既存と異なるもの） */
 export function diffCandidate(extracted: CandidateExtract, listing: AdminService): CandidateFieldDiff[] {
-  return CANDIDATE_DIFF_FIELDS.flatMap((field) => {
+  return CANDIDATE_DIFF_FIELDS.flatMap((field): CandidateFieldDiff[] => {
     const candidate = normalizeForDiff(extracted[field]);
     if (candidate === null || (Array.isArray(candidate) && candidate.length === 0)) return [];
+    // 掲載は複数カテゴリ（F-121）。候補のカテゴリが掲載のどれかに含まれていれば差分にしない
+    if (field === 'category') {
+      return listing.categories.includes(extracted.category)
+        ? []
+        : [{ field, current: listing.categories, candidate: extracted.category }];
+    }
     const raw = listing[field];
     // 多言語テキストは候補にある言語だけを比べる（候補に無い言語は既存の値を残すため差分にしない）
     const comparable =

@@ -33,3 +33,15 @@ for (const path of ['/ja/services/not-exist', '/ja/legal/not-exist', '/ja/no-suc
     await expect(page).toHaveTitle('ページが見つかりません | 在日外国人向けサービス検索');
   });
 }
+
+// F-121: カテゴリ名は API（Category テーブル）から表示言語で出る。申請フォームはチェックボックスで複数選択
+test('category names come from the API in vi, and the apply form has a category checkbox group', async ({ page }) => {
+  await page.goto('/vi?category=legal');
+  await expect(page.getByLabel('Danh mục')).toHaveValue('legal');
+  await expect(page.locator('article').first()).toContainText('Pháp lý & Visa');
+
+  await page.goto('/ja/apply');
+  const group = page.getByRole('group', { name: 'カテゴリ *' });
+  await expect(group.getByRole('checkbox')).toHaveCount(8);
+  await expect(group.getByRole('checkbox', { name: '法律・ビザ' })).toBeVisible();
+});

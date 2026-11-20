@@ -1,4 +1,4 @@
-import type { ServiceDetail, ServiceSummary } from '@fss/shared/domain';
+import type { Category, ServiceDetail, ServiceSummary } from '@fss/shared/domain';
 import type { ListingInvitePrefill } from '@fss/shared/outreach';
 
 /** ブラウザから呼ぶ API の URL（ビルド時に埋め込まれる） */
@@ -47,6 +47,12 @@ export function searchServices(query: string) {
 
 export function getService(slug: string) {
   return getJson<{ data: ServiceDetail }>(`/api/v1/services/${encodeURIComponent(slug)}`);
+}
+
+/** カテゴリ一覧（F-121）。取得できないときは空配列（ページは 500 にせず、カテゴリ名はコードのまま出す） */
+export async function getCategories(): Promise<Category[]> {
+  const result = await getJson<{ data: Category[] }>('/api/v1/categories');
+  return result.ok ? result.value.data : [];
 }
 
 /** 掲載案内のリンク（F-118）の事前入力。無効・期限切れは ok:false */

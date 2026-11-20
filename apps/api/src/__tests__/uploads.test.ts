@@ -88,7 +88,7 @@ describe('image on listings', () => {
       .post('/api/v1/admin/services')
       .send({
         slug: 'with-image',
-        category: 'daily',
+        categories: ['daily'],
         prefecture: 'tokyo',
         supportedLanguages: ['en'],
         name: { en: 'With image' },
@@ -108,7 +108,7 @@ describe('image on listings', () => {
       .post('/api/v1/admin/services')
       .send({
         slug: 'bad-image',
-        category: 'daily',
+        categories: ['daily'],
         prefecture: 'tokyo',
         supportedLanguages: ['en'],
         name: { en: 'x' },

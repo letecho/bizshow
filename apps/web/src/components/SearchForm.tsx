@@ -1,4 +1,4 @@
-import { PREFECTURES, SERVICE_CATEGORIES, type SupportedLocale } from '@fss/shared/domain';
+import { PREFECTURES, pickText, type Category, type SupportedLocale } from '@fss/shared/domain';
 import type { Dictionary } from '../i18n/dictionaries';
 import { localeNames, locales } from '../i18n/config';
 import { prefectureName } from '../i18n/labels';
@@ -16,10 +16,13 @@ export function SearchForm({
   locale,
   dict,
   values,
+  categories,
 }: {
   locale: SupportedLocale;
   dict: Dictionary;
   values: SearchValues;
+  /** GET /api/v1/categories（F-121）。取得できなかったときは空でカテゴリの選択を出さない */
+  categories: Category[];
 }) {
   const t = dict.search;
   return (
@@ -28,17 +31,22 @@ export function SearchForm({
         <span>{t.keyword}</span>
         <input type="search" name="q" defaultValue={values.q} maxLength={100} placeholder={t.keywordPlaceholder} />
       </label>
-      <label className={styles.field}>
-        <span>{t.category}</span>
-        <select name="category" defaultValue={values.category ?? ''}>
-          <option value="">{t.any}</option>
-          {SERVICE_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {dict.categories[c]}
-            </option>
-          ))}
-        </select>
-      </label>
+      {categories.length > 0 ? (
+        <label className={styles.field}>
+          <span>{t.category}</span>
+          <select name="category" defaultValue={values.category ?? ''}>
+            <option value="">{t.any}</option>
+            {categories.map((c) => (
+              <option key={c.code} value={c.code}>
+                {pickText(c.name, locale)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        // カテゴリ一覧を取得できないときも、指定中の条件は次の検索に引き継ぐ
+        values.category && <input type="hidden" name="category" value={values.category} />
+      )}
       <label className={styles.field}>
         <span>{t.prefecture}</span>
         <select name="prefecture" defaultValue={values.prefecture ?? ''}>

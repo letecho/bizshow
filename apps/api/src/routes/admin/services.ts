@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { AdminServiceInputSchema, AdminServiceListQuerySchema, PublishInputSchema, type AdminService } from '@fss/shared';
 import { HttpError } from '../../middleware/errors';
+import type { CategoryRepository } from '../../repositories/categoryRepository';
 import { SlugConflictError, type ServiceAdminRepository } from '../../repositories/serviceRepository';
 import { asyncHandler } from '../asyncHandler';
+import { assertCategoriesExist } from '../categories';
 import { invalidateServiceCache } from '../serviceCache';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,7 +24,7 @@ export async function withSlugConflict<T>(fn: () => Promise<T>): Promise<T> {
 /** /api/v1/admin/services: 掲載 CRUD・公開切替。更新系は公開キャッシュを無効化する */
 export function adminServicesRouter(
   repo: ServiceAdminRepository,
-  { staleDays, now = () => new Date() }: { staleDays: number; now?: () => Date },
+  { staleDays, categories, now = () => new Date() }: { staleDays: number; categories: CategoryRepository; now?: () => Date },
 ): Router {
   const router = Router();
 
@@ -53,6 +55,7 @@ export function adminServicesRouter(
     '/',
     asyncHandler(async (req, res) => {
       const input = AdminServiceInputSchema.parse(req.body);
+      await assertCategoriesExist(categories, input.categories);
       const service = await withSlugConflict(() => repo.create(input));
       await invalidateServiceCache(service.slug);
       res.status(201).json({ data: service });
@@ -64,6 +67,7 @@ export function adminServicesRouter(
     asyncHandler(async (req, res) => {
       const id = String(req.params.id);
       const input = AdminServiceInputSchema.parse(req.body);
+      await assertCategoriesExist(categories, input.categories);
       const before = await found(id);
       const service = await withSlugConflict(() => repo.update(id, input));
       if (!service) throw notFound(id);

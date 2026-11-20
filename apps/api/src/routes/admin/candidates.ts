@@ -18,8 +18,10 @@ import {
 import { getAdmin } from '../../middleware/auth';
 import { HttpError } from '../../middleware/errors';
 import { CandidateConflictError, type ApproveCandidateArgs, type CandidateRepository } from '../../repositories/candidateRepository';
+import type { CategoryRepository } from '../../repositories/categoryRepository';
 import type { ServiceAdminRepository } from '../../repositories/serviceRepository';
 import { asyncHandler } from '../asyncHandler';
+import { assertCategoriesExist } from '../categories';
 import { invalidateServiceCache } from '../serviceCache';
 import { withSlugConflict } from './services';
 
@@ -40,6 +42,7 @@ async function withConflict<T>(fn: () => Promise<T>): Promise<T> {
 export interface AdminCandidatesRouterOptions {
   candidates: CandidateRepository;
   services: ServiceAdminRepository;
+  categories: CategoryRepository;
   /** COLLECTOR_ENTITY_SCOPE。範囲外の種類（個人・不明など）は種類と根拠の入力なしに承認できない */
   entityScope: EntityScope;
   /** 説明文の下書き（F-117）。COLLECTOR_LLM_* と ANTHROPIC_API_KEY が揃ったときだけ渡す */
@@ -48,7 +51,14 @@ export interface AdminCandidatesRouterOptions {
 }
 
 /** /api/v1/admin/candidates: 掲載候補の一覧・詳細（既存掲載との差分）・承認・却下・保留（F-113） */
-export function adminCandidatesRouter({ candidates, services, entityScope, llm, now = () => new Date() }: AdminCandidatesRouterOptions): Router {
+export function adminCandidatesRouter({
+  candidates,
+  services,
+  categories,
+  entityScope,
+  llm,
+  now = () => new Date(),
+}: AdminCandidatesRouterOptions): Router {
   const router = Router();
 
   const found = async (id: string): Promise<AdminCandidate> => {
@@ -93,6 +103,7 @@ export function adminCandidatesRouter({ candidates, services, entityScope, llm, 
       if (!isReviewable(candidate)) {
         throw new HttpError(409, 'CONFLICT', `Candidate is already ${candidate.status}`);
       }
+      await assertCategoriesExist(categories, input.categories);
       let entity: ApproveCandidateArgs['entity'];
       if (!isEntityInScope(candidate.entityType, entityScope)) {
         // 個人情報に当たりうる候補（個人・不明）は、管理者が法人・公的機関と確認した根拠が無ければ公開しない

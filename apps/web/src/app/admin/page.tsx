@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
-import { pickText, type AdminService } from '@fss/shared/domain';
+import { categoryName, pickText, type AdminService } from '@fss/shared/domain';
 import { AdminHeader } from '../../components/admin/AdminHeader';
 import { adminFetch } from '../../lib/adminApi';
-import { toQueryString } from '../../lib/api';
+import { getCategories, toQueryString } from '../../lib/api';
 import { setPublished } from './actions';
 import styles from './admin.module.css';
 
@@ -16,7 +16,7 @@ export default async function AdminServicesPage({ searchParams }: Props) {
   // stale=1: 収集した掲載のうち COLLECTOR_STALE_DAYS を過ぎても確認できていないもの（F-116）
   const stale = params.stale === '1';
   const query = toQueryString({ q: params.q, published: params.published, stale: stale ? 'true' : undefined, limit: '100' });
-  const res = await adminFetch(`/services?${query}`).catch(() => null);
+  const [res, categories] = await Promise.all([adminFetch(`/services?${query}`).catch(() => null), getCategories()]);
   if (res && (res.status === 401 || res.status === 403)) redirect('/admin/login');
   const body = res?.ok ? ((await res.json()) as { data: AdminService[]; meta: { total: number } }) : null;
   const q = typeof params.q === 'string' ? params.q : '';
@@ -62,7 +62,7 @@ export default async function AdminServicesPage({ searchParams }: Props) {
                     <td>{pickText(s.name, 'ja')}</td>
                     <td>{s.slug}</td>
                     <td>
-                      {s.category} / {s.prefecture}
+                      {s.categories.map((code) => categoryName(categories, code, 'ja')).join('・')} / {s.prefecture}
                     </td>
                     <td>
                       <span className={s.isPublished ? styles.badgeOn : styles.badgeOff}>

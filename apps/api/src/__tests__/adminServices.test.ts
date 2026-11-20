@@ -5,7 +5,7 @@ import { makeRecord, testApp } from './helpers/fixtures';
 
 const input = {
   slug: 'kawasaki-legal',
-  category: 'legal',
+  categories: ['legal'],
   prefecture: 'kanagawa',
   supportedLanguages: ['ja', 'en', 'vi'],
   name: { en: 'Kawasaki Legal Desk', vi: 'Tư vấn pháp lý Kawasaki' },
@@ -14,8 +14,8 @@ const input = {
 
 function setup() {
   const records = [
-    makeRecord({ slug: 'published-one', category: 'daily' }),
-    makeRecord({ slug: 'hidden-one', category: 'daily', isPublished: false }),
+    makeRecord({ slug: 'published-one', categories: ['daily'] }),
+    makeRecord({ slug: 'hidden-one', categories: ['daily'], isPublished: false }),
   ];
   const repo = createInMemoryServiceRepository(records);
   return { records, app: testApp([], { serviceRepository: repo }) };

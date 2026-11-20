@@ -10,8 +10,8 @@ datasource db {
 model ServiceListing {
   id                 String   @id @default(cuid())
   slug               String   @unique
-  /// SERVICE_CATEGORIES (packages/shared)
-  category           String
+  /// Category.code[]（1〜5、順序あり。先頭が主カテゴリ、F-121）
+  categories         String[]
   /// PREFECTURES[].code (packages/shared)
   prefecture         String
   city               String?
@@ -39,9 +39,21 @@ model ServiceListing {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  @@index([category, prefecture])
+  @@index([prefecture])
+  @@index([categories], type: Gin)
   @@index([isPublished])
   @@index([corporateNumber])
+}
+
+/// 掲載のカテゴリ（F-121）。初期 8 件はマイグレーションで投入し、管理者が追加できる（名前変更・削除は対象外）
+model Category {
+  /// SlugSchema と同じ形式（最大 50 字）
+  code      String   @id
+  /// LocalizedText（en 必須）
+  name      Json
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// お問い合わせ（F-103）
@@ -67,8 +79,8 @@ enum ListingRequestStatus {
 model ListingRequest {
   id                 String               @id @default(cuid())
   status             ListingRequestStatus @default(pending)
-  /// SERVICE_CATEGORIES (packages/shared)
-  category           String
+  /// Category.code[]（1〜5、順序あり、F-121）
+  categories         String[]
   /// PREFECTURES[].code (packages/shared)
   prefecture         String
   city               String?
