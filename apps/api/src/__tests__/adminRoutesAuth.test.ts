@@ -54,6 +54,7 @@ describe('admin API routes require authentication (all routes)', () => {
     expect(adminRoutes).toEqual(
       expect.arrayContaining([
         { method: 'get', path: '/api/v1/admin/me' },
+        { method: 'post', path: '/api/v1/admin/categories' },
         { method: 'get', path: '/api/v1/admin/services' },
         { method: 'post', path: '/api/v1/admin/services' },
         { method: 'put', path: '/api/v1/admin/services/test-id' },

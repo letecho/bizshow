@@ -25,16 +25,6 @@
     "details": "View details",
     "pagination": "Search result pages"
   },
-  "categories": {
-    "medical": "Medical",
-    "legal": "Legal & Visa",
-    "housing": "Housing",
-    "telecom": "Phone & Internet",
-    "finance": "Banking & Money",
-    "education": "Education",
-    "work": "Work",
-    "daily": "Daily Life"
-  },
   "detail": {
     "category": "Category",
     "area": "Area",
@@ -78,6 +68,8 @@
     "title": "Apply for a listing",
     "lead": "Businesses that support foreign residents can apply to be listed. We will review your application and contact you by email.",
     "requiredHint": "* Required. Please enter the service name and description in English at least.",
+    "categoriesHint": "Choose up to {max}.",
+    "categoriesUnavailable": "Could not load the categories. Please try again later.",
     "city": "City / Ward",
     "serviceName": "Service name",
     "description": "Description",

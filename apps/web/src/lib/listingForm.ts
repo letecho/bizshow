@@ -14,7 +14,7 @@ function localized(form: FormData, field: string): Record<string, string> | unde
 export function listingFormToInput(form: FormData): Record<string, unknown> {
   const text = (key: string) => String(form.get(key) ?? '');
   return {
-    category: text('category'),
+    categories: form.getAll('categories').map(String),
     prefecture: text('prefecture'),
     city: text('city'),
     supportedLanguages: form.getAll('supportedLanguages').map(String),

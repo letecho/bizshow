@@ -4,7 +4,7 @@ import { createInMemoryListingRequestRepository } from '../repositories/listingR
 import { testApp } from './helpers/fixtures';
 
 const valid = {
-  category: 'housing',
+  categories: ['housing'],
   prefecture: 'osaka',
   city: 'Osaka',
   supportedLanguages: ['ja', 'en', 'vi'],
@@ -28,10 +28,10 @@ describe('POST /api/v1/listing-requests', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ data: { id: repo.records[0].id, status: 'pending' } });
     expect(repo.records).toHaveLength(1);
-    expect(repo.records[0]).toMatchObject({ status: 'pending', contactEmail: 'sato@example.com', category: 'housing' });
+    expect(repo.records[0]).toMatchObject({ status: 'pending', contactEmail: 'sato@example.com', categories: ['housing'] });
   });
 
-  it.each(['name', 'category', 'contactName', 'contactEmail', 'supportedLanguages'])(
+  it.each(['name', 'categories', 'contactName', 'contactEmail', 'supportedLanguages'])(
     'returns 400 VALIDATION_ERROR when %s is missing',
     async (field) => {
       const { app, repo } = setup();

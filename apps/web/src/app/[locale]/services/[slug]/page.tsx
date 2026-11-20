@@ -1,11 +1,11 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { isSupportedLocale, pickText } from '@fss/shared/domain';
+import { categoryName, isSupportedLocale, pickText } from '@fss/shared/domain';
 import { getDictionary } from '../../../../i18n/dictionaries';
 import { localeNames } from '../../../../i18n/config';
 import { prefectureName } from '../../../../i18n/labels';
-import { getService } from '../../../../lib/api';
+import { getCategories, getService } from '../../../../lib/api';
 import { formatVerifiedDate, listingReportHref } from '../../../../lib/listingReport';
 import { googleMapsSearchUrl } from '../../../../lib/mapLink';
 import styles from './page.module.css';
@@ -33,7 +33,7 @@ export default async function ServiceDetailPage({ params }: Props) {
   const dict = getDictionary(locale);
   const t = dict.detail;
 
-  const result = await loadService(slug);
+  const [result, categories] = await Promise.all([loadService(slug), getCategories()]);
   if (!result.ok && result.status === 404) notFound();
   const mapUrl =
     result.ok && result.value.data.address
@@ -65,7 +65,7 @@ export default async function ServiceDetailPage({ params }: Props) {
           <p className={styles.description}>{pickText(result.value.data.description, locale)}</p>
           <dl className={styles.list}>
             <dt>{t.category}</dt>
-            <dd>{dict.categories[result.value.data.category] ?? result.value.data.category}</dd>
+            <dd>{result.value.data.categories.map((code) => categoryName(categories, code, locale)).join('・')}</dd>
             <dt>{t.area}</dt>
             <dd>
               {prefectureName(result.value.data.prefecture, locale)}

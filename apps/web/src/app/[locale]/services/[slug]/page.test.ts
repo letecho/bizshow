@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { isValidElement, type ReactNode } from 'react';
-import type { ServiceDetail } from '@fss/shared/domain';
+import { INITIAL_CATEGORIES, type Category, type ServiceDetail } from '@fss/shared/domain';
 
 const service: ServiceDetail = {
   id: 'svc1',
   slug: 'tokyo-legal',
-  category: 'legal',
+  categories: ['legal', 'pets'],
   prefecture: 'tokyo',
   city: null,
   supportedLanguages: ['ja', 'en'],
@@ -19,8 +19,12 @@ const service: ServiceDetail = {
   lastVerifiedAt: null,
 } as unknown as ServiceDetail;
 
+const categories: Category[] = [...INITIAL_CATEGORIES, { code: 'pets', name: { en: 'Pets', ja: 'ペット' } }];
+const getCategories = vi.fn(async () => categories);
+
 vi.mock('../../../../lib/api', () => ({
   getService: vi.fn(async () => ({ ok: true, value: { data: service } })),
+  getCategories: () => getCategories(),
 }));
 
 const { default: ServiceDetailPage } = await import('./page');
@@ -45,6 +49,36 @@ describe('ServiceDetailPage image (B-006)', () => {
     expect(await images('ja')).toEqual([{ src: 'https://cdn.example.com/uploads/a.jpg', alt: '東京法律相談', className: expect.anything() }]);
     // 名前が未翻訳の言語は en にフォールバック
     expect((await images('vi'))[0].alt).toBe('Tokyo Legal Desk');
+  });
+});
+
+/** dd 要素の文字列（カテゴリ名などの確認用） */
+function ddTexts(node: ReactNode): string[] {
+  if (Array.isArray(node)) return node.flatMap(ddTexts);
+  if (!isValidElement<{ children?: ReactNode }>(node)) return [];
+  const own = node.type === 'dd' ? [flatten(node.props.children)] : [];
+  return [...own, ...ddTexts(node.props.children)];
+}
+function flatten(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(flatten).join('');
+  if (isValidElement<{ children?: ReactNode }>(node)) return flatten(node.props.children);
+  return '';
+}
+
+describe('ServiceDetailPage categories (F-121)', () => {
+  it('shows all categories joined with ・ in each locale, falling back to en', async () => {
+    const texts = async (locale: string) =>
+      ddTexts(await ServiceDetailPage({ params: Promise.resolve({ locale, slug: service.slug }) }));
+    expect(await texts('ja')).toContain('法律・ビザ・ペット');
+    expect(await texts('en')).toContain('Legal & Visa・Pets');
+    expect(await texts('vi')).toContain('Pháp lý & Visa・Pets');
+  });
+
+  it('shows category codes when the category list cannot be loaded', async () => {
+    getCategories.mockResolvedValueOnce([]);
+    const element = await ServiceDetailPage({ params: Promise.resolve({ locale: 'ja', slug: service.slug }) });
+    expect(ddTexts(element)).toContain('legal・pets');
   });
 });
 

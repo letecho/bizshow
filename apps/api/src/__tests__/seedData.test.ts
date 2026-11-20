@@ -12,7 +12,8 @@ describe('buildSearchText', () => {
 describe('SEED_LISTINGS', () => {
   it('has 24 listings across 8 categories and 5 prefectures', () => {
     expect(SEED_LISTINGS).toHaveLength(24);
-    expect(new Set(SEED_LISTINGS.map((l) => l.category))).toEqual(new Set(SERVICE_CATEGORIES));
+    expect(new Set(SEED_LISTINGS.map((l) => l.categories[0]))).toEqual(new Set(SERVICE_CATEGORIES));
+    expect(SEED_LISTINGS.every((l) => l.categories.length === 1)).toBe(true);
     expect(new Set(SEED_LISTINGS.map((l) => l.prefecture))).toEqual(
       new Set(['tokyo', 'osaka', 'saitama', 'aichi', 'fukuoka']),
     );
@@ -41,7 +42,9 @@ describe('DATA_SOURCES seed (F-112)', () => {
       attribution: '出典: 医療情報ネット（厚生労働省）のデータを加工して作成',
     });
     const upserts: { create: Record<string, unknown>; update: Record<string, unknown> }[] = [];
+    const categoryUpserts: { create: Record<string, unknown>; update: Record<string, unknown> }[] = [];
     const prisma = {
+      category: { upsert: async (args: (typeof categoryUpserts)[number]) => categoryUpserts.push(args) },
       serviceListing: { upsert: async () => ({}) },
       dataSource: { upsert: async (args: (typeof upserts)[number]) => upserts.push(args) },
     };
@@ -49,5 +52,8 @@ describe('DATA_SOURCES seed (F-112)', () => {
     expect(upserts).toHaveLength(DATA_SOURCES.length);
     expect(upserts[0].create).toMatchObject({ id: 'mhlw-medical', isEnabled: false });
     expect(upserts[0].update).not.toHaveProperty('isEnabled');
+    // 初期カテゴリ（F-121）は作成のみ。既存の行は変えない
+    expect(categoryUpserts.map((u) => u.create.code)).toEqual([...SERVICE_CATEGORIES]);
+    expect(categoryUpserts.every((u) => Object.keys(u.update).length === 0)).toBe(true);
   });
 });

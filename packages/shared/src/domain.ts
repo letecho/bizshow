@@ -34,6 +34,46 @@ export const SERVICE_CATEGORIES = [
 ] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
+/** URL 用 slug: 英小文字・数字をハイフンで区切る */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const SLUG_MAX = 100;
+export const SlugSchema = z.string().trim().min(1).max(SLUG_MAX).regex(SLUG_PATTERN);
+
+/**
+ * カテゴリ（F-121）。正は DB の Category テーブルで、管理者が追加できる。
+ * SERVICE_CATEGORIES は初期カテゴリ（シード・収集・掲載案内で使う既定値）
+ */
+export interface Category {
+  code: string;
+  name: LocalizedText;
+}
+
+export const CATEGORY_CODE_MAX = 50;
+export const CATEGORY_NAME_MAX = 50;
+/** 1 掲載あたりのカテゴリ数の上限 */
+export const LISTING_CATEGORIES_MAX = 5;
+export const CategoryCodeSchema = z.string().trim().min(1).max(CATEGORY_CODE_MAX).regex(SLUG_PATTERN);
+
+/** 初期カテゴリの名前（マイグレーション 20261120000000_categories で投入した値と同じ。シード・テスト用） */
+export const INITIAL_CATEGORY_NAMES: Record<ServiceCategory, Required<LocalizedText>> = {
+  medical: { ja: '医療', en: 'Medical', vi: 'Y tế' },
+  legal: { ja: '法律・ビザ', en: 'Legal & Visa', vi: 'Pháp lý & Visa' },
+  housing: { ja: '住まい', en: 'Housing', vi: 'Nhà ở' },
+  telecom: { ja: '通信', en: 'Phone & Internet', vi: 'Điện thoại & Internet' },
+  finance: { ja: '銀行・お金', en: 'Banking & Money', vi: 'Ngân hàng & Tiền' },
+  education: { ja: '教育', en: 'Education', vi: 'Giáo dục' },
+  work: { ja: '仕事', en: 'Work', vi: 'Việc làm' },
+  daily: { ja: '生活', en: 'Daily Life', vi: 'Đời sống' },
+};
+
+export const INITIAL_CATEGORIES: Category[] = SERVICE_CATEGORIES.map((code) => ({ code, name: INITIAL_CATEGORY_NAMES[code] }));
+
+/** コードからカテゴリ名を引く。未登録のコードはコードのまま返す */
+export function categoryName(categories: readonly Category[], code: string, locale: SupportedLocale): string {
+  const found = categories.find((c) => c.code === code);
+  return found ? pickText(found.name, locale) : code;
+}
+
 export interface Prefecture {
   code: string;
   ja: string;
@@ -100,7 +140,8 @@ const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === 
 
 export const ServiceSearchQuerySchema = z.object({
   q: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()),
-  category: z.preprocess(emptyToUndefined, z.enum(SERVICE_CATEGORIES).optional()),
+  /** 存在しないコードは 0 件（形式が不正なものだけ 400） */
+  category: z.preprocess(emptyToUndefined, CategoryCodeSchema.optional()),
   prefecture: z.preprocess(emptyToUndefined, z.enum(PREFECTURE_CODES).optional()),
   /** 対応言語で絞り込み */
   lang: z.preprocess(emptyToUndefined, z.enum(SUPPORTED_LOCALES).optional()),
@@ -115,7 +156,8 @@ export type ServiceSearchQuery = z.infer<typeof ServiceSearchQuerySchema>;
 export interface ServiceSummary {
   id: string;
   slug: string;
-  category: ServiceCategory;
+  /** Category.code の配列（1〜5、順序あり）。先頭が主カテゴリ */
+  categories: string[];
   prefecture: PrefectureCode;
   city: string | null;
   supportedLanguages: SupportedLocale[];
@@ -196,7 +238,12 @@ export const localizedTextInput = (max: number) =>
 
 /** 掲載内容（ServiceListing 相当の入力項目。slug・公開状態は含まない） */
 export const ListingFieldsSchema = z.object({
-  category: z.enum(SERVICE_CATEGORIES),
+  /** 存在するカテゴリかは API が DB で確認する。重複は除去し順序は保つ（先頭が主カテゴリ） */
+  categories: z
+    .array(CategoryCodeSchema)
+    .min(1)
+    .max(LISTING_CATEGORIES_MAX)
+    .transform((codes) => [...new Set(codes)]),
   prefecture: z.enum(PREFECTURE_CODES),
   city: optionalText(LISTING_TEXT_MAX.city),
   supportedLanguages: z
@@ -230,6 +277,13 @@ export type ListingRequestInput = z.infer<typeof ListingRequestInputSchema>;
 
 // ---- Admin (F-106) -----------------------------------------------------------
 
+/** POST /api/v1/admin/categories の入力（F-121） */
+export const CategoryInputSchema = z.object({
+  code: CategoryCodeSchema,
+  name: localizedTextInput(CATEGORY_NAME_MAX),
+});
+export type CategoryInput = z.infer<typeof CategoryInputSchema>;
+
 // ---- Image upload (F-107) ----------------------------------------------------
 
 export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -253,11 +307,6 @@ export interface UploadTicket {
   headers: Record<string, string>;
   publicUrl: string;
 }
-
-/** URL 用 slug: 英小文字・数字をハイフンで区切る */
-export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-export const SLUG_MAX = 100;
-export const SlugSchema = z.string().trim().min(1).max(SLUG_MAX).regex(SLUG_PATTERN);
 
 /** 管理画面での掲載作成・更新（PUT は全項目置き換え） */
 export const AdminServiceInputSchema = ListingFieldsSchema.extend({

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { isValidElement, type ReactNode } from 'react';
-import { LISTING_TEXT_MAX, ListingFieldsSchema, SLUG_MAX, SlugSchema } from '@fss/shared/domain';
+import { INITIAL_CATEGORIES, LISTING_TEXT_MAX, ListingFieldsSchema, SLUG_MAX, SlugSchema } from '@fss/shared/domain';
 import { getDictionary } from '../i18n/dictionaries';
 
 // B-011: 掲載フォームの文字入力欄に共通スキーマと同じ上限（maxLength）がある
@@ -12,6 +12,7 @@ vi.mock('react', async (importOriginal) => {
     ...actual,
     useState: <T,>(init: T) => [init, () => {}],
     useActionState: <T,>(_action: unknown, init: T) => [init, () => {}, false],
+    useTransition: () => [false, () => {}],
   };
 });
 
@@ -48,7 +49,7 @@ const listingFields = {
 
 describe('listing form maxLength matches the shared schema (B-011)', () => {
   it('limits are the ones the schema enforces', () => {
-    const base = { category: 'legal', prefecture: 'tokyo', supportedLanguages: ['en'], name: { en: 'a' }, description: { en: 'a' } };
+    const base = { categories: ['legal'], prefecture: 'tokyo', supportedLanguages: ['en'], name: { en: 'a' }, description: { en: 'a' } };
     for (const field of ['name', 'description', 'address'] as const) {
       const at = { ...base, [field]: { en: 'a'.repeat(LISTING_TEXT_MAX[field]) } };
       const over = { ...base, [field]: { en: 'a'.repeat(LISTING_TEXT_MAX[field] + 1) } };
@@ -61,7 +62,7 @@ describe('listing form maxLength matches the shared schema (B-011)', () => {
   });
 
   it('apply form', () => {
-    expect(maxLengths(ApplyForm({ locale: 'en', dict: getDictionary('en') }))).toEqual({
+    expect(maxLengths(ApplyForm({ locale: 'en', dict: getDictionary('en'), categories: INITIAL_CATEGORIES }))).toEqual({
       ...listingFields,
       contactName: 100,
       contactEmail: 254,
@@ -69,6 +70,6 @@ describe('listing form maxLength matches the shared schema (B-011)', () => {
   });
 
   it('admin service form', () => {
-    expect(maxLengths(ServiceForm({ action: async (s) => s }))).toEqual({ slug: SLUG_MAX, ...listingFields });
+    expect(maxLengths(ServiceForm({ action: async (s) => s, categories: INITIAL_CATEGORIES }))).toEqual({ slug: SLUG_MAX, ...listingFields });
   });
 });

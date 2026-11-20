@@ -1,5 +1,5 @@
 import type { AdminCandidateDetail, CandidateExtract } from '@fss/shared/collector';
-import type { AdminService, LocalizedText } from '@fss/shared/domain';
+import { LISTING_CATEGORIES_MAX, type AdminService, type LocalizedText } from '@fss/shared/domain';
 
 // F-113: 候補の承認フォームの初期値（既存掲載があればその値に、候補の抽出値を重ねる）
 
@@ -26,7 +26,12 @@ export function candidateFormDefaults(detail: AdminCandidateDetail): Partial<Adm
   const base = detail.matchedListing;
   return {
     slug: base?.slug ?? suggestCandidateSlug(e, detail.sourceRecordId),
-    category: e.category,
+    // 既存掲載の更新では、管理者が付けたカテゴリを残し、候補のカテゴリが無ければ末尾に加える（F-121）
+    categories: base
+      ? base.categories.includes(e.category)
+        ? base.categories
+        : [...base.categories, e.category].slice(0, LISTING_CATEGORIES_MAX)
+      : [e.category],
     prefecture: e.prefecture,
     city: e.city ?? base?.city ?? null,
     phone: e.phone ?? base?.phone ?? null,

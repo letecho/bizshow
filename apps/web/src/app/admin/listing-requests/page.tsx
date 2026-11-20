@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
-import { LISTING_REQUEST_STATUSES, isSupportedLocale, type ListingRequest } from '@fss/shared/domain';
+import { LISTING_REQUEST_STATUSES, categoryName, isSupportedLocale, type ListingRequest } from '@fss/shared/domain';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ApproveForm } from '../../../components/admin/ApproveForm';
 import { adminFetch } from '../../../lib/adminApi';
+import { getCategories } from '../../../lib/api';
 import { approveRequest, rejectRequest } from '../actions';
 import styles from '../admin.module.css';
 
@@ -25,7 +26,10 @@ type Props = { searchParams: Promise<{ status?: string }> };
 export default async function ListingRequestsPage({ searchParams }: Props) {
   const { status: rawStatus } = await searchParams;
   const status = (LISTING_REQUEST_STATUSES as readonly string[]).includes(rawStatus ?? '') ? rawStatus! : 'pending';
-  const res = await adminFetch(`/listing-requests?status=${status}&limit=100`).catch(() => null);
+  const [res, categories] = await Promise.all([
+    adminFetch(`/listing-requests?status=${status}&limit=100`).catch(() => null),
+    getCategories(),
+  ]);
   if (res && (res.status === 401 || res.status === 403)) redirect('/admin/login');
   const body = res?.ok ? ((await res.json()) as { data: ListingRequest[]; meta: { total: number } }) : null;
 
@@ -54,7 +58,7 @@ export default async function ListingRequestsPage({ searchParams }: Props) {
               <dd>{new Date(r.createdAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</dd>
               <dt>カテゴリ / 地域</dt>
               <dd>
-                {r.category} / {r.prefecture}
+                {r.categories.map((code) => categoryName(categories, code, 'ja')).join('・')} / {r.prefecture}
                 {r.city ? ` / ${r.city}` : ''}
               </dd>
               <dt>対応言語</dt>

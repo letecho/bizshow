@@ -6,16 +6,16 @@ import { makeRecord, testApp } from './helpers/fixtures';
 // 検索結果は appCache（プロセス内 LRU）に 60 秒キャッシュされるため、
 // テストごとに異なるクエリを使う
 const records = [
-  makeRecord({ slug: 'legal-tokyo', category: 'legal', prefecture: 'tokyo', supportedLanguages: ['ja', 'en', 'vi'] }),
-  makeRecord({ slug: 'legal-osaka', category: 'legal', prefecture: 'osaka', supportedLanguages: ['ja', 'en'] }),
+  makeRecord({ slug: 'legal-tokyo', categories: ['legal'], prefecture: 'tokyo', supportedLanguages: ['ja', 'en', 'vi'] }),
+  makeRecord({ slug: 'legal-osaka', categories: ['legal'], prefecture: 'osaka', supportedLanguages: ['ja', 'en'] }),
   makeRecord({
     slug: 'medical-tokyo',
-    category: 'medical',
+    categories: ['medical', 'legal'],
     prefecture: 'tokyo',
     supportedLanguages: ['ja', 'en', 'vi'],
     name: { en: 'Shinjuku Clinic', ja: '新宿クリニック' },
   }),
-  makeRecord({ slug: 'housing-hidden', category: 'housing', isPublished: false, supportedLanguages: ['vi'] }),
+  makeRecord({ slug: 'housing-hidden', categories: ['housing'], isPublished: false, supportedLanguages: ['vi'] }),
 ];
 const app = testApp(records);
 
@@ -28,7 +28,7 @@ describe('GET /api/v1/services', () => {
     expect(res.body.data[0]).toEqual({
       id: records[2].id,
       slug: 'medical-tokyo',
-      category: 'medical',
+      categories: ['medical', 'legal'],
       prefecture: 'tokyo',
       city: null,
       supportedLanguages: ['ja', 'en', 'vi'],
@@ -36,11 +36,23 @@ describe('GET /api/v1/services', () => {
     });
   });
 
-  it('category=legal returns only legal services', async () => {
+  it('category=legal returns services that have legal among their categories (F-121)', async () => {
     const res = await request(app).get('/api/v1/services?category=legal');
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(2);
-    expect(res.body.data.every((s: { category: string }) => s.category === 'legal')).toBe(true);
+    expect(res.body.data.map((s: { slug: string }) => s.slug)).toEqual(['medical-tokyo', 'legal-osaka', 'legal-tokyo']);
+    expect(res.body.data.every((s: { categories: string[] }) => s.categories.includes('legal'))).toBe(true);
+  });
+
+  it('a listing with 2 categories is found from either category (F-121)', async () => {
+    const medical = await request(app).get('/api/v1/services?category=medical&limit=19');
+    expect(medical.body.data.map((s: { slug: string }) => s.slug)).toEqual(['medical-tokyo']);
+  });
+
+  it('unknown category codes return 0 results, malformed codes 400', async () => {
+    const unknown = await request(app).get('/api/v1/services?category=no-such-category');
+    expect(unknown.status).toBe(200);
+    expect(unknown.body).toMatchObject({ data: [], meta: { total: 0 } });
+    expect((await request(app).get('/api/v1/services?category=Bad%20Code')).status).toBe(400);
   });
 
   it('lang=vi returns only vi-supported published services', async () => {
@@ -67,7 +79,7 @@ describe('GET /api/v1/services', () => {
   });
 
   it('caches results for identical (normalized) queries', async () => {
-    const repo = createInMemoryServiceRepository([makeRecord({ category: 'telecom', prefecture: 'aichi' })]);
+    const repo = createInMemoryServiceRepository([makeRecord({ categories: ['telecom'], prefecture: 'aichi' })]);
     const search = vi.spyOn(repo, 'search');
     const cachedApp = testApp([], { serviceRepository: repo });
     const first = await request(cachedApp).get('/api/v1/services?category=telecom&prefecture=aichi');

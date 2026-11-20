@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { CANDIDATE_STATUSES, type AdminCandidate } from '@fss/shared/collector';
-import { PREFECTURES, SERVICE_CATEGORIES } from '@fss/shared/domain';
+import { INITIAL_CATEGORY_NAMES, PREFECTURES, SERVICE_CATEGORIES } from '@fss/shared/domain';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import en from '../../../i18n/dictionaries/en.json';
 import { adminFetch } from '../../../lib/adminApi';
 import { toQueryString } from '../../../lib/api';
 import styles from '../admin.module.css';
@@ -60,7 +59,7 @@ export default async function CandidatesPage({ searchParams }: Props) {
           <option value="">すべてのカテゴリ</option>
           {SERVICE_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}（{en.categories[c]}）
+              {c}（{INITIAL_CATEGORY_NAMES[c].en}）
             </option>
           ))}
         </select>

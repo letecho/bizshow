@@ -12,16 +12,21 @@ import {
   InquiryInputSchema,
   UploadRequestSchema,
   SlugSchema,
+  CategoryInputSchema,
+  INITIAL_CATEGORIES,
   ListingRequestInputSchema,
   ServiceSearchQuerySchema,
+  categoryName,
   isSupportedLocale,
   pickText,
 } from './domain';
 
 describe('constants', () => {
-  it('defines 4 locales, 8 categories and 47 prefectures', () => {
+  it('defines 3 locales, 8 initial categories and 47 prefectures', () => {
     expect(SUPPORTED_LOCALES).toEqual(['ja', 'en', 'vi']);
     expect(SERVICE_CATEGORIES).toHaveLength(8);
+    expect(INITIAL_CATEGORIES.map((c) => c.code)).toEqual([...SERVICE_CATEGORIES]);
+    expect(INITIAL_CATEGORIES.every((c) => c.name.ja && c.name.en && c.name.vi)).toBe(true);
     expect(PREFECTURES).toHaveLength(47);
     expect(new Set(PREFECTURES.map((p) => p.code)).size).toBe(47);
     expect(PREFECTURES.find((p) => p.code === 'tokyo')).toEqual({ code: 'tokyo', ja: '東京都', en: 'Tokyo' });
@@ -62,8 +67,13 @@ describe('ServiceSearchQuerySchema', () => {
     expect(parsed).toEqual({ q: 'clinic', category: 'legal', lang: 'vi', page: 2, limit: 10 });
   });
 
+  it('accepts any well-formed category code (unknown codes match nothing instead of 400)', () => {
+    expect(ServiceSearchQuerySchema.parse({ category: 'food' }).category).toBe('food');
+  });
+
   it.each([
-    ['invalid category', { category: 'food' }],
+    ['malformed category', { category: 'Food & Drink' }],
+    ['category over 50 chars', { category: 'a'.repeat(51) }],
     ['limit over 50', { limit: '51' }],
     ['limit 100', { limit: 100 }],
     ['page 0', { page: '0' }],
@@ -92,7 +102,7 @@ describe('InquiryInputSchema', () => {
 
 describe('ListingRequestInputSchema', () => {
   const valid = {
-    category: 'legal',
+    categories: ['legal'],
     prefecture: 'tokyo',
     supportedLanguages: ['ja', 'en', 'en'],
     name: { en: 'Visa Office', ja: '', vi: 'Văn phòng visa' },
@@ -112,6 +122,19 @@ describe('ListingRequestInputSchema', () => {
     expect(ListingRequestInputSchema.safeParse({ ...valid, supportedLanguages: [] }).success).toBe(false);
     const { contactEmail: _omit, ...withoutEmail } = valid;
     expect(ListingRequestInputSchema.safeParse(withoutEmail).success).toBe(false);
+  });
+
+  it('accepts 1 to 5 categories, keeps their order and removes duplicates', () => {
+    expect(ListingRequestInputSchema.parse({ ...valid, categories: ['work', 'legal', 'work'] }).categories).toEqual([
+      'work',
+      'legal',
+    ]);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, categories: ['a', 'b', 'c', 'd', 'e'] }).success).toBe(true);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, categories: [] }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, categories: ['a', 'b', 'c', 'd', 'e', 'f'] }).success).toBe(false);
+    expect(ListingRequestInputSchema.safeParse({ ...valid, categories: ['Bad Code'] }).success).toBe(false);
+    const { categories: _omit, ...withoutCategories } = valid;
+    expect(ListingRequestInputSchema.safeParse({ ...withoutCategories, category: 'legal' }).success).toBe(false);
   });
 
   it('validates website URL and phone format', () => {
@@ -138,13 +161,33 @@ describe('admin schemas', () => {
   it('defaults isPublished to false for new services', () => {
     const parsed = AdminServiceInputSchema.parse({
       slug: 'a',
-      category: 'daily',
+      categories: ['daily'],
       prefecture: 'tokyo',
       supportedLanguages: ['en'],
       name: { en: 'A' },
       description: { en: 'B' },
     });
     expect(parsed.isPublished).toBe(false);
+  });
+});
+
+describe('categories (F-121)', () => {
+  it('validates the category input (code format, en name required)', () => {
+    expect(CategoryInputSchema.parse({ code: 'pets', name: { en: 'Pets', ja: ' ペット ', vi: '' } })).toEqual({
+      code: 'pets',
+      name: { en: 'Pets', ja: 'ペット' },
+    });
+    expect(CategoryInputSchema.safeParse({ code: 'pets', name: { ja: 'ペット' } }).success).toBe(false);
+    expect(CategoryInputSchema.safeParse({ code: 'Pets!', name: { en: 'Pets' } }).success).toBe(false);
+    expect(CategoryInputSchema.safeParse({ code: 'a'.repeat(51), name: { en: 'Pets' } }).success).toBe(false);
+    expect(CategoryInputSchema.safeParse({ code: 'pets', name: { en: 'a'.repeat(51) } }).success).toBe(false);
+  });
+
+  it('categoryName picks the locale with en fallback and returns unknown codes as-is', () => {
+    const categories = [...INITIAL_CATEGORIES, { code: 'pets', name: { en: 'Pets' } }];
+    expect(categoryName(categories, 'legal', 'vi')).toBe('Pháp lý & Visa');
+    expect(categoryName(categories, 'pets', 'ja')).toBe('Pets');
+    expect(categoryName(categories, 'unknown', 'ja')).toBe('unknown');
   });
 });
 

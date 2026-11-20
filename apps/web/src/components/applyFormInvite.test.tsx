@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { isValidElement, type ReactNode } from 'react';
+import { INITIAL_CATEGORIES } from '@fss/shared/domain';
 import type { ListingInvitePrefill } from '@fss/shared/outreach';
 import { getDictionary } from '../i18n/dictionaries';
 
@@ -52,9 +53,10 @@ describe('ApplyForm with an invite (F-118)', () => {
   const dict = getDictionary('ja');
 
   it('fills in the candidate details', () => {
-    const values = defaults(ApplyForm({ locale: 'ja', dict, initial: prefill }));
+    const values = defaults(ApplyForm({ locale: 'ja', dict, initial: prefill, categories: INITIAL_CATEGORIES }));
     expect(values).toMatchObject({
-      category: 'medical',
+      'categories=medical': true,
+      'categories=legal': false,
       prefecture: 'aichi',
       city: '名古屋市',
       name_ja: 'テスト病院',
@@ -72,8 +74,8 @@ describe('ApplyForm with an invite (F-118)', () => {
   });
 
   it('leaves the form empty without an invite', () => {
-    const values = defaults(ApplyForm({ locale: 'ja', dict }));
-    expect(values).toMatchObject({ category: '', prefecture: '', name_ja: undefined, 'supportedLanguages=ja': false });
+    const values = defaults(ApplyForm({ locale: 'ja', dict, categories: INITIAL_CATEGORIES }));
+    expect(values).toMatchObject({ 'categories=medical': false, prefecture: '', name_ja: undefined, 'supportedLanguages=ja': false });
   });
 
   it('has the invite and opt-out texts in all supported languages', () => {

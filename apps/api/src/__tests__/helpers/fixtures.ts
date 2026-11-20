@@ -1,9 +1,10 @@
-import type { LocalizedText, PrefectureCode, ServiceCategory, SupportedLocale } from '@fss/shared';
+import type { LocalizedText, PrefectureCode, SupportedLocale } from '@fss/shared';
 import { createApp, type AppOptions } from '../../app';
 import { createLogMailer } from '../../mail/mailer';
 import { createInMemoryInquiryRepository } from '../../repositories/inquiryRepository';
 import { createInMemoryBlocklistRepository } from '../../repositories/blocklistRepository';
 import { createInMemoryCandidateRepository } from '../../repositories/candidateRepository';
+import { createInMemoryCategoryRepository } from '../../repositories/categoryRepository';
 import { createInMemoryListingRequestRepository } from '../../repositories/listingRequestRepository';
 import { createInMemoryOutreachRepository } from '../../repositories/outreachRepository';
 import { createLocalStorage } from '../../storage/storage';
@@ -16,7 +17,7 @@ let seq = 0;
 
 export function makeRecord(
   overrides: Partial<InMemoryServiceRecord> & {
-    category?: ServiceCategory;
+    categories?: string[];
     prefecture?: PrefectureCode;
     supportedLanguages?: SupportedLocale[];
     name?: LocalizedText;
@@ -28,7 +29,7 @@ export function makeRecord(
   return {
     id: `id-${seq}`,
     slug: `service-${seq}`,
-    category: 'medical',
+    categories: ['medical'],
     prefecture: 'tokyo',
     city: null,
     supportedLanguages: ['ja', 'en'],
@@ -52,6 +53,7 @@ export function testApp(records: InMemoryServiceRecord[] = [], overrides: Partia
   const serviceRepository = overrides.serviceRepository ?? createInMemoryServiceRepository(records);
   return createApp({
     serviceRepository,
+    categoryRepository: createInMemoryCategoryRepository(),
     candidateRepository: createInMemoryCandidateRepository([], serviceRepository),
     inquiryRepository: createInMemoryInquiryRepository(),
     listingRequestRepository: createInMemoryListingRequestRepository(),

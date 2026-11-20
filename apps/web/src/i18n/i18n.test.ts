@@ -28,7 +28,7 @@ describe('getDictionary', () => {
   });
 
   it('has every en key in all locales after fallback', () => {
-    // categories / search も含め全セクションのキーが揃うこと
+    // apply / search も含め全セクションのキーが揃うこと
     for (const locale of ['ja', 'vi'] as const) {
       const dict = getDictionary(locale);
       expect(Object.keys(dict)).toEqual(Object.keys(en));

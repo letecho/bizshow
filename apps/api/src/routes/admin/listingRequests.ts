@@ -1,14 +1,20 @@
 import { Router } from 'express';
 import { ApproveListingRequestSchema, ListingRequestListQuerySchema } from '@fss/shared';
 import { HttpError } from '../../middleware/errors';
+import type { CategoryRepository } from '../../repositories/categoryRepository';
 import type { ListingRequestRecord, ListingRequestRepository } from '../../repositories/listingRequestRepository';
 import type { ServiceAdminRepository } from '../../repositories/serviceRepository';
 import { asyncHandler } from '../asyncHandler';
+import { assertCategoriesExist } from '../categories';
 import { invalidateServiceCache } from '../serviceCache';
 import { withSlugConflict } from './services';
 
 /** /api/v1/admin/listing-requests: 申請一覧・承認（→ ServiceListing 作成）・却下 */
-export function adminListingRequestsRouter(requests: ListingRequestRepository, services: ServiceAdminRepository): Router {
+export function adminListingRequestsRouter(
+  requests: ListingRequestRepository,
+  services: ServiceAdminRepository,
+  categories: CategoryRepository,
+): Router {
   const router = Router();
 
   /** pending の申請を取得。不存在 404、処理済み 409 */
@@ -43,6 +49,7 @@ export function adminListingRequestsRouter(requests: ListingRequestRepository, s
         contactEmail: _contactEmail,
         ...fields
       } = record;
+      await assertCategoriesExist(categories, fields.categories);
       const service = await withSlugConflict(() => services.create({ ...fields, slug, isPublished }));
       const approved = await requests.setStatus(id, 'approved');
       await invalidateServiceCache(service.slug);

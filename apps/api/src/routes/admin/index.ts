@@ -4,10 +4,12 @@ import type { BudgetedLlm, EntityScope, OutreachConfig } from '@fss/shared';
 import type { Mailer } from '../../mail/mailer';
 import type { BlocklistRepository } from '../../repositories/blocklistRepository';
 import type { CandidateRepository } from '../../repositories/candidateRepository';
+import type { CategoryRepository } from '../../repositories/categoryRepository';
 import type { ListingRequestRepository } from '../../repositories/listingRequestRepository';
 import type { OutreachRepository } from '../../repositories/outreachRepository';
 import type { ServiceAdminRepository } from '../../repositories/serviceRepository';
 import type { Storage } from '../../storage/storage';
+import { adminCategoriesRouter } from '../categories';
 import { adminBlocklistRouter } from './blocklist';
 import { adminCandidatesRouter } from './candidates';
 import { adminListingRequestsRouter } from './listingRequests';
@@ -18,6 +20,8 @@ import { adminUploadsRouter } from './uploads';
 export interface AdminRouterOptions {
   requireAdmin: RequestHandler;
   services: ServiceAdminRepository;
+  /** カテゴリ（F-121） */
+  categories: CategoryRepository;
   listingRequests: ListingRequestRepository;
   storage: Storage;
   blocklist: BlocklistRepository;
@@ -38,6 +42,7 @@ export interface AdminRouterOptions {
 export function adminRouter({
   requireAdmin,
   services,
+  categories,
   listingRequests,
   storage,
   blocklist,
@@ -57,8 +62,9 @@ export function adminRouter({
     res.json({ data: getAdmin(res) });
   });
 
-  router.use('/services', adminServicesRouter(services, { staleDays }));
-  router.use('/listing-requests', adminListingRequestsRouter(listingRequests, services));
+  router.use('/categories', adminCategoriesRouter(categories));
+  router.use('/services', adminServicesRouter(services, { staleDays, categories }));
+  router.use('/listing-requests', adminListingRequestsRouter(listingRequests, services, categories));
   router.use('/uploads', adminUploadsRouter(storage));
   router.use('/blocklist', adminBlocklistRouter(blocklist));
   router.use(
@@ -66,7 +72,7 @@ export function adminRouter({
     adminCandidateOutreachRouter({ config: outreachConfig, outreach, candidates, blocklist, mailer }),
   );
   router.use('/outreach/opt-outs', adminOutreachOptOutRouter(outreach));
-  router.use('/candidates', adminCandidatesRouter({ candidates, services, entityScope, llm }));
+  router.use('/candidates', adminCandidatesRouter({ candidates, services, categories, entityScope, llm }));
 
   return router;
 }

@@ -4,15 +4,15 @@ import { startTransition, useActionState, useState, type FormEvent, type ReactNo
 import {
   LISTING_TEXT_MAX,
   PREFECTURES,
-  SERVICE_CATEGORIES,
   SLUG_MAX,
   type AdminService,
+  type Category,
   type SupportedLocale,
 } from '@fss/shared/domain';
 import type { FormState } from '../../app/admin/actions';
 import { localeNames, locales } from '../../i18n/config';
-import en from '../../i18n/dictionaries/en.json';
 import formStyles from '../Form.module.css';
+import { CategoryField } from './CategoryField';
 import { ImageField } from './ImageField';
 import styles from '../../app/admin/admin.module.css';
 
@@ -20,10 +20,13 @@ import styles from '../../app/admin/admin.module.css';
 export function ServiceForm({
   action,
   service,
+  categories,
   submitLabel = '保存',
   children,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
+  /** 選択できるカテゴリ（GET /api/v1/categories、F-121） */
+  categories: Category[];
   /** 初期値（掲載の編集、または候補の承認で抽出値から作った値） */
   service?: Partial<AdminService>;
   submitLabel?: string;
@@ -45,19 +48,6 @@ export function ServiceForm({
         <label className={formStyles.field}>
           <span>slug *</span>
           <input name="slug" required maxLength={SLUG_MAX} defaultValue={service?.slug} placeholder="tokyo-visa-office" />
-        </label>
-        <label className={formStyles.field}>
-          <span>カテゴリ *</span>
-          <select name="category" required defaultValue={service?.category ?? ''}>
-            <option value="" disabled>
-              —
-            </option>
-            {SERVICE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}（{en.categories[c]}）
-              </option>
-            ))}
-          </select>
         </label>
         <label className={formStyles.field}>
           <span>都道府県 *</span>
@@ -91,6 +81,8 @@ export function ServiceForm({
           />
         </label>
       </div>
+
+      <CategoryField categories={categories} selected={service?.categories} />
 
       <fieldset className={formStyles.fieldset}>
         <legend>対応言語 *</legend>

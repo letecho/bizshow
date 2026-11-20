@@ -12,6 +12,7 @@ import { OutreachPanel } from "../../../../components/admin/OutreachPanel";
 import { ServiceForm } from "../../../../components/admin/ServiceForm";
 import formStyles from "../../../../components/Form.module.css";
 import { adminFetch } from "../../../../lib/adminApi";
+import { getCategories } from "../../../../lib/api";
 import { candidateFormDefaults } from "../../../../lib/candidateForm";
 import {
   approveCandidate,
@@ -75,6 +76,7 @@ export default async function CandidateDetailPage({ params }: Props) {
   if (!res.ok) throw new Error(`Failed to load candidate: ${res.status}`);
   const { data: c } = (await res.json()) as { data: AdminCandidateDetail };
   // 掲載案内（F-118）の状態。取得できなくても候補の確認はできるようにする
+  const categories = await getCategories();
   const outreachRes = await adminFetch(`/candidates/${encodeURIComponent(id)}/outreach`);
   const outreach = outreachRes.ok
     ? ((await outreachRes.json()) as { data: AdminOutreachStatus }).data
@@ -231,6 +233,7 @@ export default async function CandidateDetailPage({ params }: Props) {
             <ServiceForm
               action={approveCandidate.bind(null, c.id)}
               service={candidateFormDefaults(c)}
+              categories={categories}
               submitLabel={
                 c.matchedListing && c.matchType === "update"
                   ? "承認して更新"

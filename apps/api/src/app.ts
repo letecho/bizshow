@@ -17,11 +17,13 @@ import { globalRateLimit, parseTrustProxy, type RateLimitOptions } from './middl
 import type { Mailer } from './mail/mailer';
 import type { BlocklistRepository } from './repositories/blocklistRepository';
 import type { CandidateRepository } from './repositories/candidateRepository';
+import type { CategoryRepository } from './repositories/categoryRepository';
 import type { InquiryRepository } from './repositories/inquiryRepository';
 import type { ListingRequestRepository } from './repositories/listingRequestRepository';
 import type { OutreachRepository } from './repositories/outreachRepository';
 import type { ServiceAdminRepository, ServiceRepository } from './repositories/serviceRepository';
 import { adminRouter } from './routes/admin';
+import { categoriesRouter } from './routes/categories';
 import { inquiriesRouter } from './routes/inquiries';
 import { listingRequestsRouter } from './routes/listingRequests';
 import { localUploadsRouter } from './routes/localUploads';
@@ -31,6 +33,8 @@ import type { LocalStorage, Storage } from './storage/storage';
 
 export interface AppOptions {
   serviceRepository: ServiceRepository & ServiceAdminRepository;
+  /** カテゴリ（F-121） */
+  categoryRepository: CategoryRepository;
   inquiryRepository: InquiryRepository;
   listingRequestRepository: ListingRequestRepository;
   /** 収集・クロールのブロックリスト（F-116） */
@@ -101,6 +105,7 @@ export function createApp(options: AppOptions) {
   }
 
   app.use('/api/v1/services', servicesRouter(options.serviceRepository));
+  app.use('/api/v1/categories', categoriesRouter(options.categoryRepository));
   app.use(
     '/api/v1/inquiries',
     inquiriesRouter({
@@ -110,7 +115,7 @@ export function createApp(options: AppOptions) {
     }),
   );
 
-  app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository));
+  app.use('/api/v1/listing-requests', listingRequestsRouter(options.listingRequestRepository, options.categoryRepository));
   app.use(
     '/api/v1/outreach',
     outreachRouter({ config: outreachConfig, outreach: options.outreachRepository, candidates: options.candidateRepository }),
@@ -121,6 +126,7 @@ export function createApp(options: AppOptions) {
     adminRouter({
       requireAdmin: requireAdmin(options.auth),
       services: options.serviceRepository,
+      categories: options.categoryRepository,
       listingRequests: options.listingRequestRepository,
       storage: options.storage,
       blocklist: options.blocklistRepository,

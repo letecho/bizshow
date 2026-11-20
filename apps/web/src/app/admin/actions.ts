@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import {
   AdminServiceInputSchema,
   ApproveListingRequestSchema,
+  CategoryInputSchema,
+  type Category,
   CrawlBlocklistInputSchema,
   UploadRequestSchema,
   type UploadTicket,
@@ -36,7 +38,8 @@ function serviceInput(form: FormData) {
   });
 }
 
-const INVALID = '入力内容を確認してください（slug は英小文字・数字・ハイフン、英語のサービス名と説明は必須）。';
+const INVALID =
+  '入力内容を確認してください（slug は英小文字・数字・ハイフン、カテゴリは 1〜5 個、英語のサービス名と説明は必須）。';
 
 export async function createService(_prev: FormState, form: FormData): Promise<FormState> {
   const parsed = serviceInput(form);
@@ -92,6 +95,21 @@ export async function rejectRequest(id: string): Promise<void> {
   const res = await adminFetch(`/listing-requests/${encodeURIComponent(id)}/reject`, { method: 'POST' });
   if (!res.ok) throw new Error(await errorMessage(res));
   revalidatePath('/admin/listing-requests');
+}
+
+/** カテゴリを追加する（F-121）。掲載フォームの中から呼ぶため FormData ではなく値を受け取る */
+export async function createCategory(input: {
+  code: string;
+  name: Record<string, string>;
+}): Promise<{ category: Category } | { error: string }> {
+  const parsed = CategoryInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: 'コードは英小文字・数字・ハイフン（50 字まで）、英語の名前は必須（各 50 字まで）で入力してください。' };
+  }
+  const res = await adminFetch('/categories', { method: 'POST', body: JSON.stringify(parsed.data) });
+  if (res.status === 409) return { error: `コード「${parsed.data.code}」のカテゴリは既にあります。` };
+  if (!res.ok) return { error: await errorMessage(res) };
+  return { category: ((await res.json()) as { data: Category }).data };
 }
 
 /** 画像アップロード先（presigned PUT URL）を発行する。ファイル本体はブラウザから直接 PUT する */

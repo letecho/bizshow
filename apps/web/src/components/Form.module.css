@@ -86,6 +86,17 @@
   background: #ffffff;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stack p {
+  margin: 0;
+}
+
 .hint {
   color: #64748b;
   font-size: 13px;
@@ -101,6 +112,7 @@
 .form[hidden],
 .field[hidden],
 .fieldset[hidden],
-.checks[hidden] {
+.checks[hidden],
+.stack[hidden] {
   display: none;
 }

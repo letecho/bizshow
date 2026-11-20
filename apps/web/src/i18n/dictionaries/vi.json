@@ -25,16 +25,6 @@
     "details": "Xem chi tiết",
     "pagination": "Trang kết quả tìm kiếm"
   },
-  "categories": {
-    "medical": "Y tế",
-    "legal": "Pháp lý & Visa",
-    "housing": "Nhà ở",
-    "telecom": "Điện thoại & Internet",
-    "finance": "Ngân hàng & Tiền",
-    "education": "Giáo dục",
-    "work": "Việc làm",
-    "daily": "Đời sống"
-  },
   "detail": {
     "category": "Danh mục",
     "area": "Khu vực",
@@ -78,6 +68,8 @@
     "title": "Đăng ký đăng tải",
     "lead": "Doanh nghiệp cung cấp dịch vụ cho người nước ngoài tại Nhật có thể đăng ký đăng tải tại đây. Chúng tôi sẽ xem xét và liên hệ qua email.",
     "requiredHint": "* là bắt buộc. Vui lòng nhập tên và mô tả dịch vụ ít nhất bằng tiếng Anh.",
+    "categoriesHint": "Chọn tối đa {max} danh mục.",
+    "categoriesUnavailable": "Không thể tải danh sách danh mục. Vui lòng thử lại sau.",
     "city": "Thành phố / Quận",
     "serviceName": "Tên dịch vụ",
     "description": "Mô tả",

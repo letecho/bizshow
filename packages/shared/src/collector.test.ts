@@ -322,7 +322,7 @@ describe('candidate review helpers (F-113)', () => {
 
   it('diffs only the fields the candidate has and that differ', () => {
     const listing = {
-      category: 'medical',
+      categories: ['legal', 'medical'],
       prefecture: 'tokyo',
       city: null,
       supportedLanguages: ['en', 'ja'],
@@ -348,6 +348,15 @@ describe('candidate review helpers (F-113)', () => {
       { field: 'description', current: { en: 'd' }, candidate: { en: 'changed' } },
       { field: 'phone', current: '03-0000-0000', candidate: '03-1111-1111' },
       { field: 'websiteUrl', current: null, candidate: 'https://example.com/' },
+    ]);
+  });
+
+  it('diffs the category only when the listing has none of it (F-121)', () => {
+    const listing = { categories: ['legal', 'work'], prefecture: 'tokyo', supportedLanguages: [], name: { en: 'A' } } as never;
+    const base = { prefecture: 'tokyo' as const, supportedLanguages: [], name: { en: 'A' } };
+    expect(diffCandidate({ ...base, category: 'work' }, listing)).toEqual([]);
+    expect(diffCandidate({ ...base, category: 'medical' }, listing)).toEqual([
+      { field: 'category', current: ['legal', 'work'], candidate: 'medical' },
     ]);
   });
 });

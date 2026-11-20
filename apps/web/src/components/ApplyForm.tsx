@@ -2,16 +2,18 @@
 
 import { useState, type FormEvent } from 'react';
 import {
+  LISTING_CATEGORIES_MAX,
   LISTING_TEXT_MAX,
   ListingRequestInputSchema,
   PREFECTURES,
-  SERVICE_CATEGORIES,
+  pickText,
+  type Category,
   type SupportedLocale,
 } from '@fss/shared/domain';
 import type { ListingInvitePrefill } from '@fss/shared/outreach';
 import type { Dictionary } from '../i18n/dictionaries';
 import { localeNames, locales } from '../i18n/config';
-import { prefectureName } from '../i18n/labels';
+import { format, prefectureName } from '../i18n/labels';
 import { API_URL } from '../lib/api';
 import { invalidFieldNames, invalidProps } from '../lib/formErrors';
 import { listingFormToInput } from '../lib/listingForm';
@@ -79,10 +81,13 @@ export function ApplyForm({
   locale,
   dict,
   initial,
+  categories,
 }: {
   locale: SupportedLocale;
   dict: Dictionary;
   initial?: ListingInvitePrefill;
+  /** 選べるカテゴリ（GET /api/v1/categories、F-121）。利用者は追加できない */
+  categories: Category[];
 }) {
   const t = dict.apply;
   const [{ status, invalid }, setState] = useState<FormState>({ status: 'idle', invalid: [] });
@@ -91,7 +96,7 @@ export function ApplyForm({
 
   /** 入力欄の name → エラー文に出す項目名 */
   const labels: Record<string, string> = {
-    category: dict.search.category,
+    categories: dict.search.category,
     prefecture: dict.search.prefecture,
     city: t.city,
     supportedLanguages: dict.detail.languages,
@@ -150,19 +155,31 @@ export function ApplyForm({
   return (
     <form onSubmit={onSubmit} className={styles.form} noValidate>
       <p className={styles.hint}>{t.requiredHint}</p>
-      <label className={styles.field}>
-        <span>{dict.search.category} *</span>
-        <select name="category" required defaultValue={initial?.category ?? ''} {...err('category')}>
-          <option value="" disabled>
-            —
-          </option>
-          {SERVICE_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {dict.categories[c]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className={styles.fieldset}>
+        <legend>{dict.search.category} *</legend>
+        <div className={styles.stack}>
+          <p className={styles.hint}>{format(t.categoriesHint, { max: LISTING_CATEGORIES_MAX })}</p>
+          {categories.length === 0 && (
+            <p role="alert" className={styles.error}>
+              {t.categoriesUnavailable}
+            </p>
+          )}
+          <div className={styles.checks}>
+            {categories.map((c) => (
+              <label key={c.code}>
+                <input
+                  type="checkbox"
+                  name="categories"
+                  value={c.code}
+                  defaultChecked={initial?.category === c.code}
+                  {...err('categories')}
+                />{' '}
+                {pickText(c.name, locale)}
+              </label>
+            ))}
+          </div>
+        </div>
+      </fieldset>
       <label className={styles.field}>
         <span>{dict.search.prefecture} *</span>
         <select name="prefecture" required defaultValue={initial?.prefecture ?? ''} {...err('prefecture')}>

@@ -25,16 +25,6 @@
     "details": "詳細を見る",
     "pagination": "検索結果のページ"
   },
-  "categories": {
-    "medical": "医療",
-    "legal": "法律・ビザ",
-    "housing": "住まい",
-    "telecom": "通信",
-    "finance": "銀行・お金",
-    "education": "教育",
-    "work": "仕事",
-    "daily": "生活"
-  },
   "detail": {
     "category": "カテゴリ",
     "area": "地域",
@@ -78,6 +68,8 @@
     "title": "掲載申請",
     "lead": "在日外国人向けのサービスを提供する事業者の方は、こちらから掲載を申請できます。審査のうえメールでご連絡します。",
     "requiredHint": "* は必須です。サービス名と説明は少なくとも英語で入力してください。",
+    "categoriesHint": "{max} 個まで選べます。",
+    "categoriesUnavailable": "カテゴリの一覧を読み込めませんでした。時間をおいて再度お試しください。",
     "city": "市区町村",
     "serviceName": "サービス名",
     "description": "説明",
